@@ -47,22 +47,22 @@ void setup_mesher(const directional::TriMesh &meshCut,
     for (int k = 0; k < orig2CutMatFull.outerSize(); ++k) {
       for (Eigen::SparseMatrix<double>::InnerIterator it(orig2CutMatFull, k);
            it; ++it) {
-        int relativeRow = it.row() % intData.N;
+        int relativeRow = static_cast<int>(it.row() % intData.N);
         if (relativeRow < intData.N / 2)
           orig2CutTriplets.push_back(
-              Eigen::Triplet<double>((it.row() - relativeRow) / 2 + relativeRow,
-                                     it.col(), it.value()));
+              Eigen::Triplet<double>(static_cast<int>((it.row() - relativeRow) / 2 + relativeRow),
+                                     static_cast<int>(it.col()), it.value()));
       }
     }
 
     for (int k = 0; k < exactOrig2CutMatFull.outerSize(); ++k) {
       for (Eigen::SparseMatrix<int>::InnerIterator it(exactOrig2CutMatFull, k);
            it; ++it) {
-        int relativeRow = it.row() % intData.N;
+        int relativeRow = static_cast<int>(it.row() % intData.N);
         if (relativeRow < intData.N / 2)
           exactorig2CutTriplets.push_back(
-              Eigen::Triplet<int>((it.row() - relativeRow) / 2 + relativeRow,
-                                  it.col(), it.value()));
+              Eigen::Triplet<int>(static_cast<int>((it.row() - relativeRow) / 2 + relativeRow),
+                                  static_cast<int>(it.col()), it.value()));
       }
     }
 

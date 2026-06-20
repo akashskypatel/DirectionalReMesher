@@ -80,13 +80,14 @@ inline void combing(const directional::CartesianField &rawField,
       nextMatching *= (rawField.tb->adjSpaces(
                            rawField.tb->oneRing(currSpaceMatching.first, i),
                            0) == currSpaceMatching.first
-                           ? 1.0
-                           : -1.0);
+                           ? 1
+                           : -1);
       nextMatching =
           (nextMatching + currSpaceMatching.second + 1000 * rawField.N) %
           rawField.N; // killing negatives
-      assert("combing(): NextMatching is out of bounds! " &&
-             (nextMatching >= 0 && nextMatching < rawField.N));
+      if (nextMatching < 0 || nextMatching >= rawField.N) {
+        throw std::runtime_error("combing(): nextMatching is out of bounds");
+      }
       if ((nextFace != -1) && (!visitedSpaces(nextFace)) &&
           (!spaceIsCut(currSpaceMatching.first, i)))
         spaceMatchingQueue.push(std::pair<int, int>(nextFace, nextMatching));

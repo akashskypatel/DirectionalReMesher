@@ -51,23 +51,21 @@ inline void cut_mesh_with_singularities(const TriMesh& mesh,
     faceQueue.push(std::pair<int,int>(currFace,-1));
     while (!faceQueue.empty()){
         std::pair<int, int> currFaceHE = faceQueue.front();
-        int currFace = currFaceHE.first;
-        if ((currFace == 3010)||(currFace == 3082)||(currFace == 3011))
-            int kaka=8;
+        int queuedFace = currFaceHE.first;
         int prevHE = currFaceHE.second;
         faceQueue.pop();
-        if (isFaceVisited[currFace]==1)
+        if (isFaceVisited[queuedFace]==1)
             continue;
         
-        isFaceVisited[currFace]=1;
+        isFaceVisited[queuedFace]=1;
         if (prevHE!=-1) {
             isHECut(prevHE) = 0;
             isHECut(mesh.dcel.halfedges[prevHE].twin) = 0;
         }
-        int hebegin = mesh.dcel.faces[currFace].halfedge;
+        int hebegin = mesh.dcel.faces[queuedFace].halfedge;
         int heiterate = hebegin;
         for (int i=0;i<3;i++){
-            int currHE = heiterate; //mesh.FH(currFace,i);
+            int currHE = heiterate; //mesh.FH(queuedFace,i);
             if (mesh.dcel.halfedges[currHE].twin==-1){
                 isHECut(currHE)=0;
                 heiterate = mesh.dcel.halfedges[heiterate].next;
@@ -130,7 +128,9 @@ inline void cut_mesh_with_singularities(const TriMesh& mesh,
                 hecurr = mesh.dcel.halfedges[mesh.dcel.halfedges[hecurr].prev].twin;
                 //hecurr = mesh.twinH(mesh.prevH(hecurr));
             }while (hecurr!=hebegin);
-            assert(isHECut(hecurr) && "hecurr is not cut!");
+            if (!isHECut(hecurr)) {
+                throw std::runtime_error("hecurr is not cut!");
+            }
             cutQueue.push(hecurr);
         }
     }

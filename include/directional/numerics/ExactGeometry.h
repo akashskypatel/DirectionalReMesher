@@ -96,7 +96,7 @@ public:
   Eigen::RowVectorXd to_double() const {
     Eigen::RowVectorXd doubleVec(Size);
     for (int i = 0; i < Size; i++)
-      doubleVec(i) = data[i].to_double();
+      doubleVec(i) = static_cast<double>(data[i].to_double());
     return doubleVec;
   }
 
@@ -266,8 +266,11 @@ inline int connectedComponents(const std::vector<std::pair<int, int>> &matches,
       if (components[VV[nextVertex][i]] == -1) {
         components[VV[nextVertex][i]] = components[nextVertex];
         nextVertexQueue.push_front(VV[nextVertex][i]);
-      } else
-        assert(components[VV[nextVertex][i]] == components[nextVertex]);
+      } else {
+        if (components[VV[nextVertex][i]] != components[nextVertex]) {
+          throw std::runtime_error("connectedComponents(): components mismatch!");
+        }
+      }
     }
   }
   return numComponents;

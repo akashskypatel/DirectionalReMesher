@@ -178,8 +178,6 @@ void NFunctionMesher::arrange_on_triangle(
 
       SegmentData &boundaryData = inData[static_cast<std::size_t>(edge)];
 
-      const int originalHalfedge = boundaryData.origHalfedge;
-
       for (const ENumber &localParameter : parameters) {
         boundaryData.intParams.insert(localParameter);
       }
@@ -228,7 +226,7 @@ void NFunctionMesher::arrange_on_triangle(
 
       inData.push_back(std::move(newData));
 
-      const ENumber lineOffset(static_cast<long long>(lineIndex), 1);
+      const ENumber lineOffset(static_cast<int>(lineIndex));
 
       const EVector2 basePoint = pencil.p0 + pencil.pVec * lineOffset;
 
@@ -558,9 +556,9 @@ void NFunctionMesher::segment_arrangement(
             "row is out of range");
       }
 
-      const ENumber firstLine(static_cast<long long>(data[i].lineInPencil), 1);
+      const ENumber firstLine(data[i].lineInPencil);
 
-      const ENumber secondLine(static_cast<long long>(data[j].lineInPencil), 1);
+      const ENumber secondLine(data[j].lineInPencil);
 
       /*
        * Scalar form avoids temporary Eigen matrices and guarantees that
@@ -960,7 +958,6 @@ edgeData = newEdgeData;
       }
     }
 
-    int currHE = -1;
     for (int s = 0; s < edgeOrder.size(); s++) {
       bool outgoing = adjArrEdges[edgeOrder[s]].second;
       int outCurrHE =
@@ -1394,8 +1391,9 @@ void NFunctionMesher::generate_mesh(const unsigned long resolution = 1e7) {
 
         auto &vertex = localArrangement.vertices[vertexIndex];
         vertex.data.eCoords = point3D;
-        vertex.data.coords << point3D[0].to_double(), point3D[1].to_double(),
-            point3D[2].to_double();
+        vertex.data.coords << static_cast<double>(point3D[0].to_double()),
+            static_cast<double>(point3D[1].to_double()),
+            static_cast<double>(point3D[2].to_double());
       }
 
       /*

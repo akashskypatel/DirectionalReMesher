@@ -53,35 +53,39 @@ struct IntegrationData
     }
     ~IntegrationData(){}
     
-    inline void set_linear_reduction(const Eigen::MatrixXi& _linRed, const Eigen::MatrixXi& _periodMat){linRed =_linRed; N=linRed.rows(); n=linRed.cols(); periodMat=_periodMat;}
+    inline void set_linear_reduction(const Eigen::MatrixXi& _linRed, const Eigen::MatrixXi& _periodMat){linRed =_linRed; N=static_cast<int>(linRed.rows()); n=static_cast<int>(linRed.cols()); periodMat=_periodMat;}
     
     //the default symmetry, where for even N there are N/2 lines
-    inline void set_sign_symmetry(int N){
-        assert(N%2==0);
-        linRed.resize(N,N/2);
-        linRed<<Eigen::MatrixXi::Identity(N/2,N/2),-Eigen::MatrixXi::Identity(N/2,N/2);
-        n=N/2;
+    inline void set_sign_symmetry(int newN){
+        if (newN%2!=0) {
+            throw std::runtime_error("set_sign_symmetry() only works with even N");
+        }
+        linRed.resize(newN,newN/2);
+        linRed<<Eigen::MatrixXi::Identity(newN/2,newN/2),-Eigen::MatrixXi::Identity(newN/2,newN/2);
+        n=newN/2;
         set_default_period_matrix(n);
     }
     
     //the entire first N/3 lines are symmetric w.r.t. to the next two (N/3) packets, and where if N is even we also add sign symmetry.
-    inline void set_triangular_symmetry(int N){
-        assert(N%3==0);
-        if (N%2==0){
-            linRed.resize(N,N/3);
-            linRed.block(0,0,N/2,N/3)<<Eigen::MatrixXi::Identity(N/3,N/3),-Eigen::MatrixXi::Identity(N/6,N/6),Eigen::MatrixXi::Identity(N/6,N/6);
-            linRed.block(N/2,0,N/2,N/3)=-linRed.block(0,0,N/2,N/3);
-            n=N/3;
+    inline void set_triangular_symmetry(int newN){
+        if (newN%3!=0) {
+            throw std::runtime_error("set_triangular_symmetry() only works with N%3==0");
+        }
+        if (newN%2==0){
+            linRed.resize(newN,newN/3);
+            linRed.block(0,0,newN/2,newN/3)<<Eigen::MatrixXi::Identity(newN/3,newN/3),-Eigen::MatrixXi::Identity(newN/6,newN/6),Eigen::MatrixXi::Identity(newN/6,newN/6);
+            linRed.block(newN/2,0,newN/2,newN/3)=-linRed.block(0,0,newN/2,newN/3);
+            n=newN/3;
         } else {
-            linRed.resize(N,2*N/3);
-            linRed<<Eigen::MatrixXi::Identity(2*N/3,2*N/3),-Eigen::MatrixXi::Identity(N/3,N/3),-Eigen::MatrixXi::Identity(N/3,N/3);
-            n=2*N/3;
+            linRed.resize(newN,2*newN/3);
+            linRed<<Eigen::MatrixXi::Identity(2*newN/3,2*newN/3),-Eigen::MatrixXi::Identity(newN/3,newN/3),-Eigen::MatrixXi::Identity(newN/3,newN/3);
+            n=2*newN/3;
         }
         set_default_period_matrix(n);
     }
     
-    inline void set_default_period_matrix(int n){
-        periodMat=Eigen::MatrixXi::Identity(n,n);
+    inline void set_default_period_matrix(int newn){
+        periodMat=Eigen::MatrixXi::Identity(newn,newn);
     }
 };
 } // namespace directional

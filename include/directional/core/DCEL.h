@@ -3019,11 +3019,11 @@ public:
         continue;
 
       edges.push_back(Edge());
-      edges[edges.size() - 1].ID = edges.size() - 1;
-      edges[edges.size() - 1].halfedge = i;
-      halfedges[i].edge = edges.size() - 1;
+      edges.back().ID = static_cast<int>(edges.size() - 1);
+      edges.back().halfedge = i;
+      halfedges[i].edge = static_cast<int>(edges.size() - 1);
       if (halfedges[i].twin != -1)
-        halfedges[halfedges[i].twin].edge = edges.size() - 1;
+        halfedges[halfedges[i].twin].edge = static_cast<int>(edges.size() - 1);
     }
 
     // reorienting vertex halfedges in case of boundaries

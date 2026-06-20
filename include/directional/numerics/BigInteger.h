@@ -21,7 +21,7 @@
 
 class BigInteger {
 private:
-  static const long long BASE = 1e9;
+  static constexpr long long BASE = 1000000000LL;
   static const int DIGITS = 9;
   static const int CONVERTIBLE_SIZE =
       2; // maximum amount of digits in an integer that can be safely
@@ -35,7 +35,9 @@ private:
     while (!digits.empty() && digits.back() == 0) {
       digits.pop_back();
       whileTest++;
-      assert(whileTest < 10000 && "trim(): while running too long! ");
+      if (whileTest >= 10000) {
+        throw std::runtime_error("trim(): while running too long! ");
+      }
     }
     if (digits.empty()) {
       digits.push_back(0);
@@ -66,10 +68,11 @@ public:
   }
 
   long long convert() const {
-    assert((digits.size() <= CONVERTIBLE_SIZE) &&
-           "integer is not of a convertible size!");
-    long long result = 0.0;
-    for (int i = digits.size() - 1; i >= 0; i--)
+    if (digits.size() > CONVERTIBLE_SIZE) {
+      throw std::runtime_error("integer is not of a convertible size!");
+    }
+    long long result = 0;
+    for (int i = static_cast<int>(digits.size()) - 1; i >= 0; i--)
       result = result * BASE + digits[i];
 
     return (negative ? -result : result);
@@ -256,7 +259,9 @@ public:
         right = mid - 1;
       }
       whileTest++;
-      assert("operator/: while running too long! " && whileTest < 10000);
+      if (whileTest >= 10000) {
+        throw std::runtime_error("operator/: while running too long! ");
+      }
     }
 
     return (this->negative != other.negative ? -quotient : quotient);
@@ -290,7 +295,7 @@ public:
     quotient.digits.resize(dividend.digits.size());
     BigInteger current;
     BigInteger mod;
-    for (int i = dividend.digits.size() - 1; i >= 0; i--) {
+    for (int i = static_cast<int>(dividend.digits.size()) - 1; i >= 0; i--) {
       current.digits.insert(current.digits.begin(), dividend.digits[i]);
       quotient.digits[i] = current.single_digit_division(
           divisor, mod); // updates current as the modulo
@@ -381,7 +386,9 @@ BigInteger gcd(BigInteger a, BigInteger b) {
     b = a % b;
     a = temp;
     whileTest++;
-    assert(whileTest < 10000 && "gcd(): while running too long! ");
+    if (whileTest >= 10000) {
+      throw std::runtime_error("gcd(): while running too long! ");
+    }
   }
   return a;
 }

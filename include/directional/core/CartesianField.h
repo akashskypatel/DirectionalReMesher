@@ -49,8 +49,8 @@ public:
 
   Eigen::VectorXi matching; // Matching(i)=j when vector k in adjSpaces(i,0)
                             // matches to vector (k+j)%N in adjSpaces(i,1)
-  Eigen::VectorXd effort; // Effort of the entire matching (sum of deviations
-                          // from parallel transport)
+  Eigen::VectorXd effort;   // Effort of the entire matching (sum of deviations
+                            // from parallel transport)
   Eigen::VectorXi
       singLocalCycles; // Singular (dual elements). Only the local cycles! not
                        // the generators or boundary cycles
@@ -60,7 +60,7 @@ public:
 
   CartesianField() {}
   CartesianField(const TangentBundle &_tb) : tb(&_tb) {}
-  ~CartesianField() {}
+  virtual ~CartesianField() = default;
 
   // Initializing the field with the proper tangent spaces
   void inline init(const TangentBundle &_tb, const fieldTypeEnum _fieldType,
@@ -73,11 +73,19 @@ public:
   };
 
   void inline set_intrinsic_field(const Eigen::MatrixXd &_intField) {
-    assert(!(fieldType == fieldTypeEnum::POWER_FIELD) ||
-           (_intField.cols() == 2));
-    assert((_intField.cols() == 2 * N) ||
-           !(fieldType == fieldTypeEnum::POLYVECTOR_FIELD ||
-             fieldType == fieldTypeEnum::RAW_FIELD));
+    if (fieldType == fieldTypeEnum::POWER_FIELD && _intField.cols() != 2) {
+      throw std::invalid_argument(
+          "CartesianField::init(): POWER_FIELD requires _intField to have "
+          "exactly 2 columns");
+    }
+
+    if ((fieldType == fieldTypeEnum::POLYVECTOR_FIELD ||
+         fieldType == fieldTypeEnum::RAW_FIELD) &&
+        _intField.cols() != 2 * N) {
+      throw std::invalid_argument(
+          "CartesianField::init(): RAW_FIELD and POLYVECTOR_FIELD require "
+          "_intField to have exactly 2 * N columns");
+    }
     intField = _intField;
 
     extField = tb->project_to_extrinsic(Eigen::VectorXi(), intField);
@@ -104,7 +112,8 @@ public:
     } else
       extField = _extField;
     intField = tb->project_to_intrinsic(
-        Eigen::VectorXi::LinSpaced(extField.rows(), 0, extField.rows() - 1),
+        Eigen::VectorXi::LinSpaced(static_cast<int>(extField.rows()), 0,
+                                   static_cast<int>(extField.rows() - 1)),
         extField);
   }
 
@@ -120,8 +129,11 @@ public:
   // giving a single vector version of the field
   // This is tangent space -> N coefficients -> xyz dominant order
   Eigen::VectorXd flatten(const bool isIntrinsic = false) const {
-    assert(fieldType == fieldTypeEnum::RAW_FIELD &&
-           "flatten(): the real method is only good for raw fields");
+    if (fieldType != fieldTypeEnum::RAW_FIELD) {
+      throw std::invalid_argument(
+          "CartesianField::flatten(): the real method is only good for raw "
+          "fields");
+    }
     Eigen::MatrixXd field = (isIntrinsic ? intField : extField);
     Eigen::VectorXd vecField(field.rows() * field.cols());
     for (int i = 0; i < field.rows(); i++)
@@ -133,10 +145,13 @@ public:
 
   // Giving a single complex version (for power fields and polyvectors)
   /* Eigen::VectorXcd flatten_complex() const{
-   assert((fieldType==fieldTypeEnum::POWER_FIELD ||
-   fieldType==fieldTypeEnum::POLYVECTOR_FIELD) && "flatten(): the complex method
-   is only good for PolyVector or Power fields"); Eigen::VectorXcd
-   vecField(intField.rows()*intField.cols()/2); for (int
+   if ((fieldType!=fieldTypeEnum::POWER_FIELD &&
+   fieldType!=fieldTypeEnum::POLYVECTOR_FIELD)) {
+     throw std::invalid_argument(
+         "CartesianField::flatten_complex(): the complex method is only good "
+         "for PolyVector or Power fields");
+   }
+   Eigen::VectorXcd vecField(intField.rows()*intField.cols()/2); for (int
    j=0;j<intField.cols();j+=2) for (int i=0;i<intField.rows();i++)
    vecField(i*intField.cols()/2+j/2) =
    std::complex<double>(intField(i,j),intField(i,j+1));

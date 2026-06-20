@@ -10,7 +10,6 @@
 #include <stdexcept>
 #include <vector>
 
-
 #include <Eigen/Core>
 
 #include <directional/core/CartesianField.h>
@@ -23,7 +22,6 @@
 #include <directional/integration/IntegrationData.h>
 #include <directional/integration/integrate.h>
 #include <directional/util/GraphUtils.h>
-
 
 namespace directional {
 inline int eigen_index_to_int(const Eigen::Index value) {
@@ -49,8 +47,11 @@ inline void setup_integration(const directional::CartesianField &field,
   using namespace Eigen;
   using namespace std;
 
-  assert(field.tb->discTangType() == discTangTypeEnum::FACE_SPACES &&
-         "setup_integration() only works with face-based fields");
+  if (field.tb == nullptr ||
+      field.tb->discTangType() != discTangTypeEnum::FACE_SPACES) {
+    throw std::invalid_argument(
+        "integrate(): expected a field with a face-based tangent bundle");
+  }
 
   const directional::TriMesh &meshWhole =
       *((PCFaceTangentBundle *)(field.tb))->mesh;
@@ -195,13 +196,13 @@ inline void setup_integration(const directional::CartesianField &field,
 
       for (int j = 0; j < 3; j++)
         if (meshWhole.F(meshWhole.HF(currH), j) == i)
-          cutF(meshWhole.HF(currH), j) = cut2whole.size() - 1;
+          cutF(meshWhole.HF(currH), j) = static_cast<int>(cut2whole.size() - 1);
       currH = meshWhole.twinH(meshWhole.prevH(currH));
     } while ((beginH != currH) && (currH != -1));
   }
 
-  cutV.resize(cutVlist.size(), 3);
-  for (int i = 0; i < cutVlist.size(); i++)
+  cutV.resize(static_cast<int>(cutVlist.size()), 3);
+  for (int i = 0; i < static_cast<int>(cutVlist.size()); i++)
     cutV.row(i) = cutVlist[i];
 
   // starting from each cut-graph node, we trace cut curves
@@ -240,23 +241,23 @@ inline void setup_integration(const directional::CartesianField &field,
         // advancing on the cut until next node
         while ((cutValence(nextCutVertex) == 2) &&
                (!isSingular(nextCutVertex)) && (!isBoundary(nextCutVertex))) {
-          int beginH = meshWhole.VH(nextCutVertex);
-          int currH = beginH;
-          int nextHalfedgeInCut = -1;
+          int innerBeginH = meshWhole.VH(nextCutVertex);
+          int innerCurrH = innerBeginH;
+          int innerNextHalfedgeInCut = -1;
           do {
             // unclaimed cut halfedge
-            if ((isHEcut(currH) != 0) && (isHEClaimed(currH) == 0)) {
-              nextHalfedgeInCut = currH;
+            if ((isHEcut(innerCurrH) != 0) && (isHEClaimed(innerCurrH) == 0)) {
+              innerNextHalfedgeInCut = innerCurrH;
               break;
             }
-            currH = meshWhole.twinH(meshWhole.prevH(currH));
-          } while (beginH != currH);
-          Halfedge2TransitionIndices(nextHalfedgeInCut) = currTransition;
-          Halfedge2TransitionIndices(meshWhole.twinH(nextHalfedgeInCut)) =
+            innerCurrH = meshWhole.twinH(meshWhole.prevH(innerCurrH));
+          } while (innerBeginH != innerCurrH);
+          Halfedge2TransitionIndices(innerNextHalfedgeInCut) = currTransition;
+          Halfedge2TransitionIndices(meshWhole.twinH(innerNextHalfedgeInCut)) =
               -currTransition;
-          isHEClaimed(nextHalfedgeInCut) = 1;
-          isHEClaimed(meshWhole.twinH(nextHalfedgeInCut)) = 1;
-          nextCutVertex = meshWhole.HV(meshWhole.nextH(nextHalfedgeInCut));
+          isHEClaimed(innerNextHalfedgeInCut) = 1;
+          isHEClaimed(meshWhole.twinH(innerNextHalfedgeInCut)) = 1;
+          nextCutVertex = meshWhole.HV(meshWhole.nextH(innerNextHalfedgeInCut));
         }
         currTransition++;
       }
@@ -316,17 +317,20 @@ inline void setup_integration(const directional::CartesianField &field,
       // currCorner gets the permutations so far
       if (newCutVertex != currCutVertex) {
         currCutVertex = newCutVertex;
-        for (int i = 0; i < permIndices.size(); i++) {
+        for (int permIndex = 0;
+             permIndex < static_cast<int>(permIndices.size()); permIndex++) {
           // place the perumtation matrix in a bigger matrix, we need to know
           // how things are connected along the cut, no?
           for (int j = 0; j < intData.N; j++)
             for (int k = 0; k < intData.N; k++) {
               vertexTrans2CutTriplets.emplace_back(
-                  intData.N * currCutVertex + j, intData.N * permIndices[i] + k,
-                  (double)permMatrices[i](j, k));
+                  intData.N * currCutVertex + j,
+                  intData.N * permIndices[permIndex] + k,
+                  (double)permMatrices[permIndex](j, k));
               vertexTrans2CutTripletsInteger.emplace_back(
-                  intData.N * currCutVertex + j, intData.N * permIndices[i] + k,
-                  permMatrices[i](j, k));
+                  intData.N * currCutVertex + j,
+                  intData.N * permIndices[permIndex] + k,
+                  permMatrices[permIndex](j, k));
             }
         }
       }
@@ -357,14 +361,16 @@ inline void setup_integration(const directional::CartesianField &field,
 
         // and identity on the fresh transition
         permMatrices.push_back(MatrixXi::Identity(intData.N, intData.N));
-        permIndices.push_back(meshWhole.V.rows() + nextTransition - 1);
+        permIndices.push_back(
+            eigen_index_to_int(meshWhole.V.rows() + nextTransition - 1));
       }
       // (Pe*(f-Je))  matrix is already inverse since halfedge matching is
       // minused
       else {
         // reverse order
         permMatrices.push_back(-MatrixXi::Identity(intData.N, intData.N));
-        permIndices.push_back(meshWhole.V.rows() - nextTransition - 1);
+        permIndices.push_back(
+            eigen_index_to_int(meshWhole.V.rows() - nextTransition - 1));
 
         for (int j = 0; j < permMatrices.size(); j++)
           permMatrices[j] = nextPermMatrix * permMatrices[j];
@@ -472,9 +478,9 @@ inline void setup_integration(const directional::CartesianField &field,
           intSpanMatTriplets.emplace_back(
               eigen_index_to_int(row), eigen_index_to_int(col),
               static_cast<double>(intData.periodMat(k, l)));
-          intSpanMatTripletsInteger.emplace_back(
-              eigen_index_to_int(row), eigen_index_to_int(col),
-              intData.periodMat(k, l));
+          intSpanMatTripletsInteger.emplace_back(eigen_index_to_int(row),
+                                                 eigen_index_to_int(col),
+                                                 intData.periodMat(k, l));
         }
       }
   }
@@ -520,7 +526,7 @@ inline void setup_integration(const directional::CartesianField &field,
   intData.integerVars.resize(numTransitions);
   intData.integerVars.setZero();
   for (int i = 0; i < numTransitions; i++)
-    intData.integerVars(i) = meshWhole.V.rows() + i;
+    intData.integerVars(i) = eigen_index_to_int(meshWhole.V.rows() + i);
 
   // fixed values
   intData.fixedIndices.resize(intData.n);
@@ -578,8 +584,10 @@ inline void setup_integration(const directional::CartesianField &field,
     }
   }
 
-  for (int i = intData.n * meshWhole.V.rows();
-       i < intData.n * (meshWhole.V.rows() + numTransitions); i++) {
+  for (int i = eigen_index_to_int(intData.n * meshWhole.V.rows());
+       i <
+       eigen_index_to_int(intData.n * (meshWhole.V.rows() + numTransitions));
+       i++) {
     singIntSpanMatTriplets.emplace_back(i, i, 1.0);
     singIntSpanMatTripletsInteger.emplace_back(i, i, 1);
   }

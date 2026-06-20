@@ -220,9 +220,11 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
               << "  maximum system nonzeros:       "
               << iterativeTimings.maximumSystemNonZeros << '\n';
   };
-
-  assert(field.tb->discTangType() == discTangTypeEnum::FACE_SPACES &&
-         "Integrate() only works with face-based fields");
+  if (field.tb == nullptr ||
+      field.tb->discTangType() != discTangTypeEnum::FACE_SPACES) {
+    throw std::invalid_argument(
+        "integrate(): expected a field with a face-based tangent bundle");
+  }
   const directional::TriMesh &meshWhole =
       *((PCFaceTangentBundle *)field.tb)->mesh;
 
@@ -244,23 +246,24 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
   paramLength /= avgGradNorm;
   log_phase("Field normalization");
 
-  int numVars = intData.linRedMat.cols();
-  // constructing face differentials
   const auto to_storage_index = [](Eigen::Index value) -> int {
     if (value < 0 ||
         value > static_cast<Eigen::Index>(std::numeric_limits<int>::max())) {
       throw std::runtime_error(
           "integrate(): sparse triplet index exceeds int range");
     }
-
     return static_cast<int>(value);
   };
+
+  int numVars = to_storage_index(intData.linRedMat.cols());
+  // constructing face differentials
   // TODO: convert to the common branched gradient operator
   vector<Triplet<double>> d0Triplets;
   vector<Triplet<double>> M1Triplets;
   VectorXd gamma(3 * intData.N * meshWhole.F.rows());
   for (int i = 0; i < meshCut.F.rows(); i++) {
-    log_progress("differential assembly", i, meshCut.F.rows());
+    log_progress("differential assembly", i,
+                 to_storage_index(meshCut.F.rows()));
     for (int j = 0; j < 3; j++) {
       for (int k = 0; k < intData.N; k++) {
         const int row = 3 * intData.N * i + intData.N * j + k;
@@ -357,7 +360,7 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
                                intData.singIntSpanMat * intData.intSpanMat;
   if (Cfull.rows() != 0) {
     qrsolver.compute(Cfull.transpose());
-    int CRank = qrsolver.rank();
+    int CRank = to_storage_index(qrsolver.rank());
 
     // creating sliced permutation matrix
     VectorXi PIndices = qrsolver.colsPermutation().indices();
@@ -367,7 +370,7 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
       for (SparseMatrix<double>::InnerIterator it(Cfull, k); it; ++it) {
         for (int j = 0; j < CRank; j++)
           if (it.row() == PIndices(j))
-            CTriplets.emplace_back(j, it.col(), it.value());
+            CTriplets.emplace_back(j, to_storage_index(it.col()), it.value());
       }
     }
 
@@ -482,7 +485,6 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
   constexpr int maximumRoundingBatchSize = 8;
   constexpr double maximumAdditionalBatchResidual = 0.12;
   constexpr double relativeBatchResidualFactor = 1.5;
-  constexpr double minimumRelativeBatchWindow = 1.0e-12;
 
   std::size_t totalVariablesFixedByBatching = 0;
   int maximumObservedBatchSize = 0;
@@ -573,7 +575,7 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
 
       for (SparseMatrix<double>::InnerIterator entry(fullEnergy, fullColumn);
            entry; ++entry) {
-        const int fullRow = static_cast<int>(entry.row());
+        const int fullRow = to_storage_index(entry.row());
 
         const int freeRow = fullToFree[static_cast<std::size_t>(fullRow)];
 
@@ -605,8 +607,8 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
 
       for (SparseMatrix<double>::InnerIterator entry(Cfull, fullColumn); entry;
            ++entry) {
-        reducedConstraintTriplets.emplace_back(entry.row(), freeColumn,
-                                               entry.value());
+        reducedConstraintTriplets.emplace_back(to_storage_index(entry.row()),
+                                               freeColumn, entry.value());
       }
     }
 
@@ -627,7 +629,7 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
     VectorXi PIndices(0);
     if (Cpart.rows() != 0) {
       qrsolver.compute(Cpart.transpose());
-      CpartRank = qrsolver.rank();
+      CpartRank = to_storage_index(qrsolver.rank());
       PIndices = qrsolver.colsPermutation().indices();
 
       vector<Triplet<double>> CPartTriplets;
@@ -635,7 +637,8 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
         for (SparseMatrix<double>::InnerIterator it(Cpart, k); it; ++it) {
           for (int j = 0; j < CpartRank; ++j) {
             if (it.row() == PIndices(j)) {
-              CPartTriplets.emplace_back(j, it.col(), it.value());
+              CPartTriplets.emplace_back(j, to_storage_index(it.col()),
+                                         it.value());
             }
           }
         }
@@ -660,14 +663,18 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
     vector<Triplet<double>> ATriplets;
     for (int k = 0; k < EtE.outerSize(); ++k) {
       for (SparseMatrix<double>::InnerIterator it(EtE, k); it; ++it) {
-        ATriplets.emplace_back(it.row(), it.col(), it.value());
+        ATriplets.emplace_back(to_storage_index(it.row()),
+                               to_storage_index(it.col()), it.value());
       }
     }
 
     for (int k = 0; k < Cpart.outerSize(); ++k) {
       for (SparseMatrix<double>::InnerIterator it(Cpart, k); it; ++it) {
-        ATriplets.emplace_back(it.row() + EtE.rows(), it.col(), it.value());
-        ATriplets.emplace_back(it.col(), it.row() + EtE.rows(), it.value());
+        ATriplets.emplace_back(to_storage_index(it.row() + EtE.rows()),
+                               to_storage_index(it.col()), it.value());
+        ATriplets.emplace_back(to_storage_index(it.col()),
+                               to_storage_index(it.row() + EtE.rows()),
+                               it.value());
       }
     }
 

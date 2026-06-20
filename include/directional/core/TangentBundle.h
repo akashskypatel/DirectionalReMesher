@@ -10,7 +10,6 @@
 #ifndef DIRECTIONAL_TANGENT_BUNDLE_H
 #define DIRECTIONAL_TANGENT_BUNDLE_H
 
-
 #include <cassert>
 #include <iostream>
 
@@ -85,30 +84,28 @@ public:
   Eigen::MatrixXd cycleNormals; // normals to cycles
 
   TangentBundle() {}
-  ~TangentBundle() {}
+  virtual ~TangentBundle() = default;
 
   // projecting an arbitrary set of extrinsic vectors (e.g. coming from
   // user-prescribed constraints) into intrinsic vectors.
   Eigen::MatrixXd virtual inline project_to_intrinsic(
-      const Eigen::VectorXi &tangentSpaces,
-      const Eigen::MatrixXd &extDirectionals) const {
-    assert(false && "The base class does not have an embedding");
-    return Eigen::MatrixXd();
+      const Eigen::VectorXi &, const Eigen::MatrixXd &) const {
+    throw std::logic_error("TangentBundle::project_to_intrinsic(): base "
+                           "tangent bundle has no embedding");
   }
 
   // projecting extrinsic to intrinsic
   Eigen::MatrixXd virtual inline project_to_extrinsic(
-      const Eigen::VectorXi &tangentSpaces,
-      const Eigen::MatrixXd &extDirectionals) const {
-    assert(false && "The base class does not have an embedding");
-    return Eigen::MatrixXd();
+      const Eigen::VectorXi &, const Eigen::MatrixXd &) const {
+    throw std::logic_error("TangentBundle::project_to_extrinsic(): base "
+                           "tangent bundle has no embedding");
   }
 
   // interpolating field from nodes in palces specified by barycentric
   // coordinates. The interpolator needs to interpret them.
-  void virtual inline interpolate(const Eigen::MatrixXi &elemIndices,
-                                  const Eigen::MatrixXd &baryCoords,
-                                  const Eigen::MatrixXd &intDirectionals,
+  void virtual inline interpolate(const Eigen::MatrixXi &,
+                                  const Eigen::MatrixXd &,
+                                  const Eigen::MatrixXd &,
                                   Eigen::MatrixXd &interpSources,
                                   Eigen::MatrixXd &interpNormals,
                                   Eigen::MatrixXd &interpField) const {
@@ -118,8 +115,8 @@ public:
   }
 
   Eigen::SparseMatrix<double> virtual inline curl_matrix(
-      const boundCondTypeEnum boundCondType, const Eigen::VectorXi &matching,
-      const bool intrinsic = false) const {
+      const boundCondTypeEnum, const Eigen::VectorXi &,
+      const bool = false) const {
     return Eigen::SparseMatrix<double>();
   }
 };

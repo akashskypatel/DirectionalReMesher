@@ -78,7 +78,10 @@ public:
   /// @brief Constructor from numerator and denominator
   ENumber(const EInt _num, const EInt _den, const bool toSimplify = true)
       : num(_num), den(_den), simple(true) {
-    assert("ENumber(): denominator is zero!" && den != 0);
+    // replace with runtime error
+    if (den == 0) {
+      throw std::runtime_error("ENumber(): denominator is zero!");
+    }
     if (toSimplify)
       simplify();
     if (den < 0) {
@@ -163,7 +166,9 @@ public:
 
   /// @brief Division operator
   ENumber operator/(const ENumber &b2) const {
-    assert("ENumber division by zero!" && b2.num != 0);
+    if (b2.num == 0) {
+      throw std::runtime_error("ENumber division by zero!");
+    }
     // reductions
     if (b2 == ENumber(1))
       return *this;

@@ -37,9 +37,10 @@ inline void effort_to_indices(const Eigen::SparseMatrix<double> &basisCycles,
 
   indices.conservativeResize(dIndices.size());
   for (int i = 0; i < indices.size(); i++) {
-    assert(fabs(std::round(dIndices(i)) - dIndices(i)) < 1e-6 &&
-           "Indices are not naturally integer!");
-    indices(i) = std::round(dIndices(i));
+    if (fabs(std::round(dIndices(i)) - dIndices(i)) >= 1e-6) {
+      throw std::runtime_error("Indices are not naturally integer!");
+    }
+    indices(i) = static_cast<int>(std::round(dIndices(i)));
   }
 }
 
@@ -144,9 +145,10 @@ inline void principal_matching(directional::CartesianField &field,
       currEffort += arg(vecjgc / transvecjfc);
     }
 
-    field.matching(i) =
+    field.matching(i) = static_cast<int>(
         indexMinFromZero -
-        round((currEffort - field.effort(i)) / (2.0 * std::numbers::pi));
+        std::round((currEffort - field.effort(i)) /
+                   (2.0 * std::numbers::pi)));
   }
 
   // Getting final singularities and their indices

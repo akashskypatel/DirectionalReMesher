@@ -90,11 +90,11 @@ inline void polygonal_edge_topology(const Eigen::VectorXi &D,
   // Sort the relation EF, accordingly to EV
   // the first one is the face on the left of the edge
 
-  for (unsigned i = 0; i < EF.rows(); ++i) {
+  for (int i = 0; i < EF.rows(); ++i) {
     int fid = EF(i, 0);
     bool flip = true;
     // search for edge EV.row(i)
-    for (unsigned j = 0; j < D(fid); ++j) {
+    for (int j = 0; j < D(fid); ++j) {
       if ((F(fid, j) == EV(i, 0)) && (F(fid, (j + 1) % D(fid)) == EV(i, 1)))
         flip = false;
     }
@@ -155,11 +155,11 @@ inline void dual_cycles(const TriMesh &mesh,
                         Eigen::VectorXi &innerEdges) {
   using namespace Eigen;
   using namespace std;
-  int numV = mesh.F.maxCoeff() + 1;
-  int eulerChar = numV - mesh.EV.rows() + mesh.F.rows();
+  int numV = static_cast<int>(mesh.F.maxCoeff() + 1);
+  int eulerChar = static_cast<int>(numV - mesh.EV.rows() + mesh.F.rows());
   vertex2cycle.conservativeResize(mesh.V.rows());
 
-  int numBoundaries = mesh.boundaryLoops.size();
+  int numBoundaries = static_cast<int>(mesh.boundaryLoops.size());
   int numGenerators = 2 - numBoundaries - eulerChar;
 
   vector<Triplet<double>> basisCycleTriplets(mesh.EV.rows() * 2);
@@ -175,8 +175,8 @@ inline void dual_cycles(const TriMesh &mesh,
   // to basisCyclesMat
   VectorXi isBoundary(mesh.V.rows());
   isBoundary.setZero();
-  for (int i = 0; i < mesh.boundaryLoops.size(); i++)
-    for (int j = 0; j < mesh.boundaryLoops[i].size(); j++)
+  for (int i = 0; i < static_cast<int>(mesh.boundaryLoops.size()); i++)
+    for (int j = 0; j < static_cast<int>(mesh.boundaryLoops[i].size()); j++)
       isBoundary(mesh.boundaryLoops[i][j]) = 1;
 
   VectorXi pureInnerEdgeMask = VectorXi::Constant(mesh.EV.rows(), 1);
@@ -198,7 +198,8 @@ inline void dual_cycles(const TriMesh &mesh,
     tree(reducedEV, primalTreeEdges, primalTreeFathers);
     // creating a set of dual edges that do not cross edges in the primal tree
     VectorXi fullIndices =
-        VectorXi::LinSpaced(mesh.EV.rows(), 0, mesh.EV.rows() - 1);
+        VectorXi::LinSpaced(static_cast<int>(mesh.EV.rows()), 0,
+                           static_cast<int>(mesh.EV.rows() - 1));
     VectorXi reducedEFIndices, inFullIndices;
     MatrixXi reducedEF;
     directional::set_diff(fullIndices, primalTreeEdges, reducedEFIndices,
@@ -244,9 +245,9 @@ inline void dual_cycles(const TriMesh &mesh,
       VectorXi visitedOnce = VectorXi::Zero(
           mesh.EF.rows()); // used to remove the tail from the LCA to the root
       bool isBoundaryCycle = true;
-      for (int i = 0; i < 2; i++) { // on leaves
-        int currTreeEdge = -1;      // indexing within dualTreeEdges
-        int currFace = currLeaves(i);
+      for (int leaf = 0; leaf < 2; leaf++) { // on leaves
+        int currTreeEdge = -1;         // indexing within dualTreeEdges
+        int currFace = currLeaves(leaf);
         currTreeEdge = dualTreeFathers(currFace);
         if (currTreeEdge == -2) {
           break;
@@ -256,7 +257,7 @@ inline void dual_cycles(const TriMesh &mesh,
           // std::cout<<"currTreeEdge: "<<currTreeEdge<<"\n"<<std::endl;
           // determining orientation of current edge vs. face
           double sign =
-              ((mesh.EF(currTreeEdge, 0) == currFace) != (i == 0) ? 1.0 : -1.0);
+              ((mesh.EF(currTreeEdge, 0) == currFace) != (leaf == 0) ? 1.0 : -1.0);
           visitedOnce(currTreeEdge) = 1 - visitedOnce(currTreeEdge);
           candidateTriplets.push_back(Triplet<double>(0, currTreeEdge, sign));
           currFace =
@@ -267,9 +268,11 @@ inline void dual_cycles(const TriMesh &mesh,
       }
 
       // only putting in dual edges that are below the LCA
-      for (int i = 0; i < candidateTriplets.size(); i++)
-        if ((visitedOnce(candidateTriplets[i].col())) &&
-            (pureInnerEdgeMask(candidateTriplets[i].col())))
+      for (int candidateIndex = 0;
+           candidateIndex < static_cast<int>(candidateTriplets.size());
+           candidateIndex++)
+        if ((visitedOnce(candidateTriplets[candidateIndex].col())) &&
+            (pureInnerEdgeMask(candidateTriplets[candidateIndex].col())))
           isBoundaryCycle = false;
 
       if (isBoundaryCycle)
@@ -280,10 +283,11 @@ inline void dual_cycles(const TriMesh &mesh,
       (isBoundaryCycle ? currBoundaryCycle++ : currGeneratorCycle++);
 
       basisCycleTriplets.push_back(Triplet<double>(currRow, i, 1.0));
-      for (size_t i = 0; i < candidateTriplets.size(); i++)
-        if (visitedOnce(candidateTriplets[i].col())) {
-          Triplet<double> trueTriplet(currRow, candidateTriplets[i].col(),
-                                      candidateTriplets[i].value());
+      for (std::size_t candidateIndex = 0;
+           candidateIndex < candidateTriplets.size(); candidateIndex++)
+        if (visitedOnce(candidateTriplets[candidateIndex].col())) {
+          Triplet<double> trueTriplet(currRow, candidateTriplets[candidateIndex].col(),
+                                      candidateTriplets[candidateIndex].value());
           basisCycleTriplets.push_back(trueTriplet);
         }
     }
@@ -304,7 +308,7 @@ inline void dual_cycles(const TriMesh &mesh,
         Triplet<double>(i, i, 1.0 - isBoundary[i]));
     if (!isBoundary(i)) {
       innerVerticesList.push_back(i);
-      vertex2cycle(i) = innerVerticesList.size() - 1;
+      vertex2cycle(i) = static_cast<int>(innerVerticesList.size() - 1);
     }
   }
 
@@ -313,11 +317,12 @@ inline void dual_cycles(const TriMesh &mesh,
       innerEdgesList.push_back(i);
 
   // summing up boundary loops
-  for (int i = 0; i < mesh.boundaryLoops.size(); i++)
-    for (int j = 0; j < mesh.boundaryLoops[i].size(); j++) {
+  for (int i = 0; i < static_cast<int>(mesh.boundaryLoops.size()); i++)
+    for (int j = 0; j < static_cast<int>(mesh.boundaryLoops[i].size()); j++) {
       sumBoundaryLoopsTriplets.push_back(
           Triplet<double>(numV + i, mesh.boundaryLoops[i][j], 1.0));
-      vertex2cycle(mesh.boundaryLoops[i][j]) = innerVerticesList.size() + i;
+      vertex2cycle(mesh.boundaryLoops[i][j]) =
+          static_cast<int>(innerVerticesList.size()) + i;
     }
 
   // just passing generators through;

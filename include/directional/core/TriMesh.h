@@ -21,7 +21,6 @@
 
 #include <directional/core/DCEL.h>
 #include <directional/geometry/Curvature.h>
-#include <directional/geometry/Curvature.h>
 
 /***
  This class stores a general-purpose triangle mesh. The triangle mesh can be
@@ -113,9 +112,10 @@ public:
 
     // This is done in the polyscope compatible fashion
     dcel.init(V, F);
-    bool consistency = dcel.check_consistency(verbose, true, true, true);
-    assert(consistency &&
-           "compute_edge_quantities(): Something is wrong with the DCEL!!");
+    if (!dcel.check_consistency(verbose, true, true, true)) {
+      throw std::runtime_error(
+          "compute_edge_quantities(): DCEL consistency check failed");
+    }
     EV.resize(dcel.edges.size(), 2);
     EF = Eigen::MatrixXi::Constant(dcel.edges.size(), 2, -1);
     EFi = Eigen::MatrixXi::Constant(dcel.edges.size(), 2, -1);
@@ -301,8 +301,10 @@ public:
 
     compute_geometric_quantities();
 
-    eulerChar = V.rows() - EV.rows() + F.rows();
-    numGenerators = (2 - eulerChar) / 2 - boundaryLoops.size();
+    eulerChar = static_cast<int>(V.rows() - EV.rows() + F.rows());
+    numGenerators =
+        static_cast<int>((2 - eulerChar) / 2 -
+                         static_cast<int>(boundaryLoops.size()));
     minBox = V.colwise().minCoeff();
     maxBox = V.colwise().maxCoeff();
 

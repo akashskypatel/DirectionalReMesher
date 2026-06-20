@@ -42,23 +42,6 @@ endif()
 add_library(directional SHARED src/directional_core.cpp)
 add_library(Directional::directional ALIAS directional)
 
-if(MSVC)
-  target_compile_options(directional PRIVATE
-    /W4
-    /WX
-    /permissive-
-
-    # Useful extra warnings
-    /w14242 # conversion: possible loss of data
-    /w14244 # conversion: possible loss of data
-    /w14245 # signed/unsigned mismatch
-    /w14263 # member function does not override
-    /w14265 # class has virtual funcs but non-virtual destructor
-    /w14287 # unsigned/negative comparison
-    /we4715 # not all control paths return a value
-  )
-endif()
-
 set_target_properties(directional PROPERTIES OUTPUT_NAME directional
                                              WINDOWS_EXPORT_ALL_SYMBOLS ON)
 
