@@ -15,7 +15,6 @@
 #include <string>
 #include <vector>
 
-
 // This header file implements a "home-made" Big Integer type, which is only
 // needed in case GMP is not installed. Note: this is slow-ish.
 

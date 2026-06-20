@@ -114,7 +114,8 @@ public:
       const Eigen::VectorXi &tangentSpaces,
       const Eigen::MatrixXd &extDirectionals) const {
     if (tangentSpaces.rows() != extDirectionals.rows()) {
-      throw std::runtime_error("tangentSpaces and extDirectionals must have the same number of rows");
+      throw std::runtime_error("tangentSpaces and extDirectionals must have "
+                               "the same number of rows");
     }
 
     int N = static_cast<int>(extDirectionals.cols() / 3);
@@ -140,13 +141,14 @@ public:
 
     if (tangentSpaces.rows() != intDirectionals.rows() &&
         tangentSpaces.rows() != 0) {
-      throw std::runtime_error("tangentSpaces and intDirectionals must have the same number of rows");
+      throw std::runtime_error("tangentSpaces and intDirectionals must have "
+                               "the same number of rows");
     }
     Eigen::VectorXi actualTangentSpaces;
     if (tangentSpaces.rows() == 0)
       actualTangentSpaces =
           Eigen::VectorXi::LinSpaced(static_cast<int>(sources.rows()), 0,
-                                    static_cast<int>(sources.rows() - 1));
+                                     static_cast<int>(sources.rows() - 1));
     else
       actualTangentSpaces = tangentSpaces;
 
@@ -172,7 +174,8 @@ public:
 
     if (elemIndices.rows() != baryCoords.rows() ||
         baryCoords.rows() != intDirectionals.rows()) {
-      throw std::runtime_error("elemIndices, baryCoords, and intDirectionals must have the same number of rows");
+      throw std::runtime_error("elemIndices, baryCoords, and intDirectionals "
+                               "must have the same number of rows");
     }
 
     int N = static_cast<int>(intDirectionals.cols() / 2);

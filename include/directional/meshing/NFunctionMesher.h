@@ -25,9 +25,9 @@
 #include <Eigen/Sparse>
 
 #include <directional/core/DCEL.h>
-#include <directional/numerics/ExactGeometry.h>
 #include <directional/meshing/MesherData.h>
 #include <directional/meshing/SetupMesher.h>
+#include <directional/numerics/ExactGeometry.h>
 
 namespace directional {
 
@@ -5420,7 +5420,8 @@ public:
 
       const ENumber exactValue(originalValue, tolerance);
 
-      const double rationalizedValue = static_cast<double>(exactValue.to_double());
+      const double rationalizedValue =
+          static_cast<double>(exactValue.to_double());
 
       if (!std::isfinite(rationalizedValue)) {
         throw std::runtime_error(
@@ -5864,13 +5865,17 @@ public:
 
         const ENumber exactEndOffsetV = transportedEnd[1] - firstEnd[1];
 
-        const double startOffsetU = static_cast<double>(exactStartOffsetU.to_double());
+        const double startOffsetU =
+            static_cast<double>(exactStartOffsetU.to_double());
 
-        const double startOffsetV = static_cast<double>(exactStartOffsetV.to_double());
+        const double startOffsetV =
+            static_cast<double>(exactStartOffsetV.to_double());
 
-        const double endOffsetU = static_cast<double>(exactEndOffsetU.to_double());
+        const double endOffsetU =
+            static_cast<double>(exactEndOffsetU.to_double());
 
-        const double endOffsetV = static_cast<double>(exactEndOffsetV.to_double());
+        const double endOffsetV =
+            static_cast<double>(exactEndOffsetV.to_double());
 
         const double endpointMismatch =
             std::max(std::abs(startOffsetU - endOffsetU),

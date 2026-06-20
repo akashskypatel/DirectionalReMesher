@@ -302,9 +302,8 @@ public:
     compute_geometric_quantities();
 
     eulerChar = static_cast<int>(V.rows() - EV.rows() + F.rows());
-    numGenerators =
-        static_cast<int>((2 - eulerChar) / 2 -
-                         static_cast<int>(boundaryLoops.size()));
+    numGenerators = static_cast<int>((2 - eulerChar) / 2 -
+                                     static_cast<int>(boundaryLoops.size()));
     minBox = V.colwise().minCoeff();
     maxBox = V.colwise().maxCoeff();
 

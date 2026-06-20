@@ -199,7 +199,7 @@ inline void dual_cycles(const TriMesh &mesh,
     // creating a set of dual edges that do not cross edges in the primal tree
     VectorXi fullIndices =
         VectorXi::LinSpaced(static_cast<int>(mesh.EV.rows()), 0,
-                           static_cast<int>(mesh.EV.rows() - 1));
+                            static_cast<int>(mesh.EV.rows() - 1));
     VectorXi reducedEFIndices, inFullIndices;
     MatrixXi reducedEF;
     directional::set_diff(fullIndices, primalTreeEdges, reducedEFIndices,
@@ -246,7 +246,7 @@ inline void dual_cycles(const TriMesh &mesh,
           mesh.EF.rows()); // used to remove the tail from the LCA to the root
       bool isBoundaryCycle = true;
       for (int leaf = 0; leaf < 2; leaf++) { // on leaves
-        int currTreeEdge = -1;         // indexing within dualTreeEdges
+        int currTreeEdge = -1;               // indexing within dualTreeEdges
         int currFace = currLeaves(leaf);
         currTreeEdge = dualTreeFathers(currFace);
         if (currTreeEdge == -2) {
@@ -257,7 +257,8 @@ inline void dual_cycles(const TriMesh &mesh,
           // std::cout<<"currTreeEdge: "<<currTreeEdge<<"\n"<<std::endl;
           // determining orientation of current edge vs. face
           double sign =
-              ((mesh.EF(currTreeEdge, 0) == currFace) != (leaf == 0) ? 1.0 : -1.0);
+              ((mesh.EF(currTreeEdge, 0) == currFace) != (leaf == 0) ? 1.0
+                                                                     : -1.0);
           visitedOnce(currTreeEdge) = 1 - visitedOnce(currTreeEdge);
           candidateTriplets.push_back(Triplet<double>(0, currTreeEdge, sign));
           currFace =
@@ -286,8 +287,9 @@ inline void dual_cycles(const TriMesh &mesh,
       for (std::size_t candidateIndex = 0;
            candidateIndex < candidateTriplets.size(); candidateIndex++)
         if (visitedOnce(candidateTriplets[candidateIndex].col())) {
-          Triplet<double> trueTriplet(currRow, candidateTriplets[candidateIndex].col(),
-                                      candidateTriplets[candidateIndex].value());
+          Triplet<double> trueTriplet(
+              currRow, candidateTriplets[candidateIndex].col(),
+              candidateTriplets[candidateIndex].value());
           basisCycleTriplets.push_back(trueTriplet);
         }
     }

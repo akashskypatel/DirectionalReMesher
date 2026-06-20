@@ -49,9 +49,9 @@ void setup_mesher(const directional::TriMesh &meshCut,
            it; ++it) {
         int relativeRow = static_cast<int>(it.row() % intData.N);
         if (relativeRow < intData.N / 2)
-          orig2CutTriplets.push_back(
-              Eigen::Triplet<double>(static_cast<int>((it.row() - relativeRow) / 2 + relativeRow),
-                                     static_cast<int>(it.col()), it.value()));
+          orig2CutTriplets.push_back(Eigen::Triplet<double>(
+              static_cast<int>((it.row() - relativeRow) / 2 + relativeRow),
+              static_cast<int>(it.col()), it.value()));
       }
     }
 
@@ -60,9 +60,9 @@ void setup_mesher(const directional::TriMesh &meshCut,
            it; ++it) {
         int relativeRow = static_cast<int>(it.row() % intData.N);
         if (relativeRow < intData.N / 2)
-          exactorig2CutTriplets.push_back(
-              Eigen::Triplet<int>(static_cast<int>((it.row() - relativeRow) / 2 + relativeRow),
-                                  static_cast<int>(it.col()), it.value()));
+          exactorig2CutTriplets.push_back(Eigen::Triplet<int>(
+              static_cast<int>((it.row() - relativeRow) / 2 + relativeRow),
+              static_cast<int>(it.col()), it.value()));
       }
     }
 

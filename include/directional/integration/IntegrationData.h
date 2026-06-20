@@ -7,86 +7,109 @@
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 
-namespace directional
-{
-//The data structure for seamless integration
-struct IntegrationData
-{
-    int N;                                              // # uncompressed parametric functions
-    int n;                                              // # independent parameteric functions
-    Eigen::MatrixXi linRed;                             // Linear Reduction tying the n dofs to the full N
-    Eigen::MatrixXi periodMat;                          // Function spanning integers
-    Eigen::SparseMatrix<double> vertexTrans2CutMat;     // Map between the whole mesh (vertex + translational jump) representation to the vertex-based representation on the cut mesh
-    Eigen::SparseMatrix<double> constraintMat;          // Linear constraints (resulting from non-singular nodes)
-    Eigen::SparseMatrix<double> linRedMat;              // Global uncompression of n->N
-    Eigen::SparseMatrix<double> intSpanMat;             // Spanning the translational jump lattice
-    Eigen::SparseMatrix<double> singIntSpanMat;         // Layer for the singularities
-    Eigen::VectorXi constrainedVertices;                // Constrained vertices (fixed points in the parameterization)
-    Eigen::VectorXi integerVars;                        // Variables that are to be rounded.
-    Eigen::MatrixXi face2cut;                           // |F|x3 map of which edges of faces are seams
-    Eigen::VectorXd nVertexFunction;                    // Final compressed result (used for meshing)
-    
-    Eigen::VectorXi fixedIndices;                       // Translation fixing indices
-    Eigen::VectorXd fixedValues;                        // Translation fixed values
-    Eigen::VectorXi singularIndices;                    // Singular-vertex indices
-    
-    //integer versions, for exact seamless parameterizations (good for error-free meshing)
-    Eigen::SparseMatrix<int> vertexTrans2CutMatInteger;
-    Eigen::SparseMatrix<int> constraintMatInteger;
-    Eigen::SparseMatrix<int> linRedMatInteger;
-    Eigen::SparseMatrix<int> intSpanMatInteger;
-    Eigen::SparseMatrix<int> singIntSpanMatInteger;
-    
-    double lengthRatio;                                 // Global scaling of functions
-    //Flags
-    bool integralSeamless;                              // Whether to do full translational seamless.
-    bool roundSeams;                                    // Whether to round seams or round singularities
-    bool verbose;                                       // Output the integration log.
-    
-    IntegrationData(int _N):lengthRatio(0.02), integralSeamless(false), roundSeams(true), verbose(false){
-        N=_N;
-        n=(N%2==0 ? N/2 : N);
-        if (N%2==0)
-            set_sign_symmetry(N);
-        else linRed=Eigen::MatrixXi::Identity(N,n);
-        set_default_period_matrix(n);
+namespace directional {
+// The data structure for seamless integration
+struct IntegrationData {
+  int N;                     // # uncompressed parametric functions
+  int n;                     // # independent parameteric functions
+  Eigen::MatrixXi linRed;    // Linear Reduction tying the n dofs to the full N
+  Eigen::MatrixXi periodMat; // Function spanning integers
+  Eigen::SparseMatrix<double>
+      vertexTrans2CutMat; // Map between the whole mesh (vertex + translational
+                          // jump) representation to the vertex-based
+                          // representation on the cut mesh
+  Eigen::SparseMatrix<double>
+      constraintMat; // Linear constraints (resulting from non-singular nodes)
+  Eigen::SparseMatrix<double> linRedMat; // Global uncompression of n->N
+  Eigen::SparseMatrix<double>
+      intSpanMat; // Spanning the translational jump lattice
+  Eigen::SparseMatrix<double> singIntSpanMat; // Layer for the singularities
+  Eigen::VectorXi constrainedVertices; // Constrained vertices (fixed points in
+                                       // the parameterization)
+  Eigen::VectorXi integerVars;         // Variables that are to be rounded.
+  Eigen::MatrixXi face2cut; // |F|x3 map of which edges of faces are seams
+  Eigen::VectorXd nVertexFunction; // Final compressed result (used for meshing)
+
+  Eigen::VectorXi fixedIndices;    // Translation fixing indices
+  Eigen::VectorXd fixedValues;     // Translation fixed values
+  Eigen::VectorXi singularIndices; // Singular-vertex indices
+
+  // integer versions, for exact seamless parameterizations (good for error-free
+  // meshing)
+  Eigen::SparseMatrix<int> vertexTrans2CutMatInteger;
+  Eigen::SparseMatrix<int> constraintMatInteger;
+  Eigen::SparseMatrix<int> linRedMatInteger;
+  Eigen::SparseMatrix<int> intSpanMatInteger;
+  Eigen::SparseMatrix<int> singIntSpanMatInteger;
+
+  double lengthRatio; // Global scaling of functions
+  // Flags
+  bool integralSeamless; // Whether to do full translational seamless.
+  bool roundSeams;       // Whether to round seams or round singularities
+  bool verbose;          // Output the integration log.
+
+  IntegrationData(int _N)
+      : lengthRatio(0.02), integralSeamless(false), roundSeams(true),
+        verbose(false) {
+    N = _N;
+    n = (N % 2 == 0 ? N / 2 : N);
+    if (N % 2 == 0)
+      set_sign_symmetry(N);
+    else
+      linRed = Eigen::MatrixXi::Identity(N, n);
+    set_default_period_matrix(n);
+  }
+  ~IntegrationData() {}
+
+  inline void set_linear_reduction(const Eigen::MatrixXi &_linRed,
+                                   const Eigen::MatrixXi &_periodMat) {
+    linRed = _linRed;
+    N = static_cast<int>(linRed.rows());
+    n = static_cast<int>(linRed.cols());
+    periodMat = _periodMat;
+  }
+
+  // the default symmetry, where for even N there are N/2 lines
+  inline void set_sign_symmetry(int newN) {
+    if (newN % 2 != 0) {
+      throw std::runtime_error("set_sign_symmetry() only works with even N");
     }
-    ~IntegrationData(){}
-    
-    inline void set_linear_reduction(const Eigen::MatrixXi& _linRed, const Eigen::MatrixXi& _periodMat){linRed =_linRed; N=static_cast<int>(linRed.rows()); n=static_cast<int>(linRed.cols()); periodMat=_periodMat;}
-    
-    //the default symmetry, where for even N there are N/2 lines
-    inline void set_sign_symmetry(int newN){
-        if (newN%2!=0) {
-            throw std::runtime_error("set_sign_symmetry() only works with even N");
-        }
-        linRed.resize(newN,newN/2);
-        linRed<<Eigen::MatrixXi::Identity(newN/2,newN/2),-Eigen::MatrixXi::Identity(newN/2,newN/2);
-        n=newN/2;
-        set_default_period_matrix(n);
+    linRed.resize(newN, newN / 2);
+    linRed << Eigen::MatrixXi::Identity(newN / 2, newN / 2),
+        -Eigen::MatrixXi::Identity(newN / 2, newN / 2);
+    n = newN / 2;
+    set_default_period_matrix(n);
+  }
+
+  // the entire first N/3 lines are symmetric w.r.t. to the next two (N/3)
+  // packets, and where if N is even we also add sign symmetry.
+  inline void set_triangular_symmetry(int newN) {
+    if (newN % 3 != 0) {
+      throw std::runtime_error(
+          "set_triangular_symmetry() only works with N%3==0");
     }
-    
-    //the entire first N/3 lines are symmetric w.r.t. to the next two (N/3) packets, and where if N is even we also add sign symmetry.
-    inline void set_triangular_symmetry(int newN){
-        if (newN%3!=0) {
-            throw std::runtime_error("set_triangular_symmetry() only works with N%3==0");
-        }
-        if (newN%2==0){
-            linRed.resize(newN,newN/3);
-            linRed.block(0,0,newN/2,newN/3)<<Eigen::MatrixXi::Identity(newN/3,newN/3),-Eigen::MatrixXi::Identity(newN/6,newN/6),Eigen::MatrixXi::Identity(newN/6,newN/6);
-            linRed.block(newN/2,0,newN/2,newN/3)=-linRed.block(0,0,newN/2,newN/3);
-            n=newN/3;
-        } else {
-            linRed.resize(newN,2*newN/3);
-            linRed<<Eigen::MatrixXi::Identity(2*newN/3,2*newN/3),-Eigen::MatrixXi::Identity(newN/3,newN/3),-Eigen::MatrixXi::Identity(newN/3,newN/3);
-            n=2*newN/3;
-        }
-        set_default_period_matrix(n);
+    if (newN % 2 == 0) {
+      linRed.resize(newN, newN / 3);
+      linRed.block(0, 0, newN / 2, newN / 3)
+          << Eigen::MatrixXi::Identity(newN / 3, newN / 3),
+          -Eigen::MatrixXi::Identity(newN / 6, newN / 6),
+          Eigen::MatrixXi::Identity(newN / 6, newN / 6);
+      linRed.block(newN / 2, 0, newN / 2, newN / 3) =
+          -linRed.block(0, 0, newN / 2, newN / 3);
+      n = newN / 3;
+    } else {
+      linRed.resize(newN, 2 * newN / 3);
+      linRed << Eigen::MatrixXi::Identity(2 * newN / 3, 2 * newN / 3),
+          -Eigen::MatrixXi::Identity(newN / 3, newN / 3),
+          -Eigen::MatrixXi::Identity(newN / 3, newN / 3);
+      n = 2 * newN / 3;
     }
-    
-    inline void set_default_period_matrix(int newn){
-        periodMat=Eigen::MatrixXi::Identity(newn,newn);
-    }
+    set_default_period_matrix(n);
+  }
+
+  inline void set_default_period_matrix(int newn) {
+    periodMat = Eigen::MatrixXi::Identity(newn, newn);
+  }
 };
 } // namespace directional
 

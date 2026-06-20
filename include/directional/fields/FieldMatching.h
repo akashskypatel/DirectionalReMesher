@@ -147,8 +147,7 @@ inline void principal_matching(directional::CartesianField &field,
 
     field.matching(i) = static_cast<int>(
         indexMinFromZero -
-        std::round((currEffort - field.effort(i)) /
-                   (2.0 * std::numbers::pi)));
+        std::round((currEffort - field.effort(i)) / (2.0 * std::numbers::pi)));
   }
 
   // Getting final singularities and their indices

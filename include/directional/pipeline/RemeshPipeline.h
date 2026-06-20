@@ -3,24 +3,25 @@
 #ifndef DIRECTIONAL_PIPELINE_REMESH_PIPELINE_H
 #define DIRECTIONAL_PIPELINE_REMESH_PIPELINE_H
 
-
-#include <cmath>
 #include <chrono>
+#include <cmath>
 #include <iostream>
 #include <stdexcept>
+
 
 #include <Eigen/Core>
 
 #include <directional/core/CartesianField.h>
-#include <directional/fields/PCFaceTangentBundle.h>
 #include <directional/core/TriMesh.h>
-#include <directional/integration/Integrate.h>
-#include <directional/meshing/Mesher.h>
 #include <directional/fields/FieldMatching.h>
+#include <directional/fields/PCFaceTangentBundle.h>
+#include <directional/integration/Integrate.h>
 #include <directional/integration/IntegrationData.h>
 #include <directional/integration/SetupIntegration.h>
+#include <directional/meshing/Mesher.h>
 #include <directional/meshing/MesherData.h>
 #include <directional/meshing/SetupMesher.h>
+
 
 namespace directional::pipeline {
 
@@ -128,12 +129,13 @@ remesh_from_raw_cross_field_impl(const TriMesh &meshWhole,
             .count() /
         1e+6;
     const auto totalSeconds =
-        std::chrono::duration_cast<std::chrono::microseconds>(now - pipelineStart)
+        std::chrono::duration_cast<std::chrono::microseconds>(now -
+                                                              pipelineStart)
             .count() /
         1e+6;
-    std::cout << "[Directional::pipeline::remesh_from_raw_cross_field_impl()]: " << label << " completed in "
-              << phaseSeconds << " s (total " << totalSeconds << " s)"
-              << std::endl;
+    std::cout << "[Directional::pipeline::remesh_from_raw_cross_field_impl()]: "
+              << label << " completed in " << phaseSeconds << " s (total "
+              << totalSeconds << " s)" << std::endl;
     phaseStart = now;
   };
 
@@ -230,6 +232,5 @@ remesh_from_cross_field(const Eigen::MatrixXd &vertices,
 }
 
 } // namespace directional::pipeline
-
 
 #endif // DIRECTIONAL_PIPELINE_REMESH_PIPELINE_H

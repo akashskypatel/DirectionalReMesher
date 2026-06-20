@@ -27,8 +27,8 @@
 #include <Eigen/Sparse>
 
 #include <directional/core/DCEL.h>
-#include <directional/numerics/ExactGeometry.h>
 #include <directional/meshing/NFunctionMesher.h>
+#include <directional/numerics/ExactGeometry.h>
 
 namespace directional {
 
@@ -408,8 +408,10 @@ void NFunctionMesher::segment_arrangement(
       // else  //triangle segment
       //     arrVertices.push_back(segments[i].source * (ENumber(1) - intParam)
       //     + segments[i].target * intParam);
-      if (arrVertices.size() > static_cast<std::size_t>(std::numeric_limits<int>::max())) {
-        throw std::overflow_error("segment_arrangement(): too many arrangement vertices");
+      if (arrVertices.size() >
+          static_cast<std::size_t>(std::numeric_limits<int>::max())) {
+        throw std::overflow_error(
+            "segment_arrangement(): too many arrangement vertices");
       }
       const int vertexIndex = static_cast<int>(arrVertices.size()) - 1;
       SV[static_cast<std::size_t>(i)].insert(std::make_pair(t, vertexIndex));

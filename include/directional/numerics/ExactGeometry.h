@@ -268,7 +268,8 @@ inline int connectedComponents(const std::vector<std::pair<int, int>> &matches,
         nextVertexQueue.push_front(VV[nextVertex][i]);
       } else {
         if (components[VV[nextVertex][i]] != components[nextVertex]) {
-          throw std::runtime_error("connectedComponents(): components mismatch!");
+          throw std::runtime_error(
+              "connectedComponents(): components mismatch!");
         }
       }
     }

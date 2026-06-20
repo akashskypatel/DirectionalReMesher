@@ -21,11 +21,12 @@
 #include <Eigen/Sparse>
 
 #include <directional/core/TriMesh.h>
-#include <directional/meshing/GenerateMesh.h>
 #include <directional/geometry/MeshTopology.h>
+#include <directional/meshing/GenerateMesh.h>
 #include <directional/meshing/MesherData.h>
 #include <directional/meshing/NFunctionMesher.h>
 #include <directional/meshing/SetupMesher.h>
+
 
 namespace directional {
 
