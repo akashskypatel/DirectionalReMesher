@@ -1,10 +1,8 @@
 # DirectionalReMesher
 
-DirectionalReMesher is a spin-off ReMesher pipeline from Directional. 
+DirectionalReMesher is a spin-off ReMesher pipeline from [Directional](https://github.com/avaxman/Directional), which is a directional-field processing library that provides a standalone C++ drop-in interface library. 
 
 DirectionalReMesher is a C++ implementation of the ReMesher algorithm from the paper ["Directional Field Synthesis, Design, and Processing" by A. Vaxman et al](https://cims.nyu.edu/gcl/papers/DirectionalFieldsSTAR-2016.pdf). It provides a practical implementation of the cross-field aligned quad remeshing with major improvements for robustness and performance compared to the original implementation. 
-
-Directional is a directional-field processing library that provides a standalone C++ drop-in interface library.
 
 This fork supports two build workflows:
 
@@ -21,7 +19,6 @@ The top-level build supports three modes:
 
 Key build toggles:
 
-- `BUILD_TUTORIALS=ON|OFF`
 - `BUILD_PYTHON=ON|OFF`
 - `BUILD_SHARED_LIBS=ON|OFF`
 - `DIRECTIONAL_ENABLE_GMP=ON|OFF`
@@ -80,7 +77,6 @@ This is the native C++ path if you want a reusable installed package.
 cmake -S . -B build\standalone `
   -DCMAKE_BUILD_TYPE=Release `
   -DCMAKE_INSTALL_PREFIX=%CD%\build\standalone\install `
-  -DBUILD_TUTORIALS=OFF `
   -DBUILD_PYTHON=OFF `
   -DDIRECTIONAL_ENABLE_GMP=ON `
 
@@ -108,47 +104,7 @@ If Directional is installed in a nonstandard location, point CMake at it:
 cmake -S . -B build -DCMAKE_PREFIX_PATH=D:\path\to\Directional\build\standalone\install
 ```
 
-### 3. Build the tutorials with pure CMake
-
-```powershell
-cmake -S . -B build\tutorials `
-  -DCMAKE_BUILD_TYPE=Release `
-  -DCMAKE_INSTALL_PREFIX=%CD%\build\tutorials\install `
-  -DBUILD_SHARED_LIBS=OFF `
-  -DBUILD_TUTORIALS=ON `
-  -DBUILD_PYTHON=OFF `
-  -DDIRECTIONAL_ENABLE_GMP=ON `
-
-cmake --build build\tutorials --config Release
-```
-
-Tutorial binaries are written under:
-
-- `tutorial\bin\Release\`
-
-`BUILD_SHARED_LIBS=OFF` is the recommended tutorial setting in this fork because it avoids Windows link issues in the bundled viewer stack.
-
-To build only specific tutorials, pass `DIRECTIONAL_TUTORIALS` as a semicolon-separated or comma-separated list of tutorial prefixes or full directory names:
-
-```powershell
-cmake -S . -B build\tutorials-single `
-  -DCMAKE_BUILD_TYPE=Release `
-  -DBUILD_SHARED_LIBS=OFF `
-  -DBUILD_TUTORIALS=ON `
-  -DBUILD_PYTHON=OFF `
-  -DDIRECTIONAL_TUTORIALS=501 `
-  -DDIRECTIONAL_ENABLE_GMP=ON `
-
-cmake --build build\tutorials-single --config Release
-```
-
-Example for multiple tutorials:
-
-```powershell
-cmake -S . -B build\tutorials-pair -DBUILD_SHARED_LIBS=OFF -DBUILD_TUTORIALS=ON -DBUILD_PYTHON=OFF -DDIRECTIONAL_TUTORIALS=501,505
-```
-
-### 4. Build the Python extension with pure CMake
+### 3. Build the Python extension with pure CMake
 
 This path is useful if you want CMake to produce the Python module directly instead of going through `setup.py`.
 
@@ -165,7 +121,6 @@ Then configure:
 cmake -S . -B build\python `
   -DCMAKE_BUILD_TYPE=Release `
   -DCMAKE_INSTALL_PREFIX=%CD%\build\python\install `
-  -DBUILD_TUTORIALS=OFF `
   -DBUILD_PYTHON=ON `
   -Dpybind11_DIR="C:\path\reported\by\pybind11\cmakedir" `
   -DDIRECTIONAL_ENABLE_GMP=ON `
@@ -212,41 +167,7 @@ python setup.py standalone --enable-gmp --auto-install-gmp
 python setup.py standalone --disable-gmp --no-auto-install-gmp
 ```
 
-### 2. Build the tutorial suite
-
-```powershell
-python setup.py tutorials
-```
-
-Default output location:
-
-- build tree: `build\tutorials\`
-
-Tutorial executables are emitted into:
-
-- `tutorial\bin\Release\`
-
-To build only specific tutorials:
-
-```powershell
-python setup.py tutorials --tutorial=501
-```
-
-Or multiple tutorials:
-
-```powershell
-python setup.py tutorials --tutorial=501,505
-```
-
-With explicit GMP selection:
-
-```powershell
-python setup.py tutorials --tutorial=501 --disable-gmp --no-auto-install-gmp
-```
-
-When `--tutorial` is provided, `setup.py` uses a tutorial-specific build directory by default so single-target builds do not reuse the full-suite build tree. Full names like `501_SeamlessIntegration` still work if you want exact naming.
-
-### 3. Build a Python wheel
+### 2. Build a Python wheel
 
 ```powershell
 python setup.py bdist_wheel
@@ -267,7 +188,7 @@ Example verified in this repo:
 
 - `dist\directional-0.1.0-cp313-cp313-win_amd64.whl`
 
-### 4. Install the built wheel
+### 3. Install the built wheel
 
 ```powershell
 python -m pip install dist\directional-0.1.0-cp313-cp313-win_amd64.whl
@@ -369,7 +290,6 @@ The following commands were verified in this fork:
 
 ```powershell
 python setup.py standalone
-python setup.py tutorials
 python setup.py build_ext --disable-gmp bdist_wheel
 python -m pip wheel . --no-deps --no-build-isolation -Cenable-gmp=0 -Cauto-install-gmp=0
 ```
@@ -377,7 +297,7 @@ python -m pip wheel . --no-deps --no-build-isolation -Cenable-gmp=0 -Cauto-insta
 And for pure CMake:
 
 ```powershell
-cmake -S . -B build\standalone -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%CD%\build\standalone\install -DBUILD_TUTORIALS=OFF -DBUILD_PYTHON=OFF
+cmake -S . -B build\standalone -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%CD%\build\standalone\install -DBUILD_PYTHON=OFF
 cmake --build build\standalone --config Release --target directional
 cmake --install build\standalone --config Release
 ```
