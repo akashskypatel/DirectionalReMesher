@@ -20,7 +20,7 @@
 #include <directional/fields/PCFaceTangentBundle.h>
 #include <directional/geometry/CutMesh.h>
 #include <directional/integration/IntegrationData.h>
-#include <directional/integration/integrate.h>
+#include <directional/integration/Integrate.h>
 #include <directional/util/GraphUtils.h>
 
 namespace directional {

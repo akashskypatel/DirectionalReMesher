@@ -91,6 +91,35 @@ Artifacts:
 - installed headers under `build\standalone\install\include`
 - CMake package files under `build\standalone\install\lib\cmake\Directional`
 
+### Optional native CLI executable
+
+The native executable is intentionally opt-in so it does not collide with the Python `directional` console script. Enable it with `DIRECTIONAL_BUILD_CLI=ON`:
+
+```powershell
+cmake -S . -B build\standalone-cli `
+  -DCMAKE_BUILD_TYPE=Release `
+  -DCMAKE_INSTALL_PREFIX=%CD%\build\standalone-cli\install `
+  -DBUILD_PYTHON=OFF `
+  -DDIRECTIONAL_BUILD_CLI=ON `
+  -DDIRECTIONAL_ENABLE_GMP=ON
+
+cmake --build build\standalone-cli --config Release --target directional_cli
+cmake --install build\standalone-cli --config Release
+```
+
+The installed native command is:
+
+```powershell
+directional info
+directional --help
+```
+
+`setup.py standalone` can also build it:
+
+```powershell
+python setup.py standalone --build-cli
+```
+
 ### 2. Consume the installed library from another CMake project
 
 ```cmake
@@ -230,6 +259,32 @@ $env:DIRECTIONAL_DIRECTIONAL_ENABLE_GMP = "0"
 python -m pip install . --no-build-isolation
 ```
 
+## Command Line Interface
+
+Installing the Python package also installs a `directional` command. The same entry point is available with `python -m directional`.
+
+Show package and native extension status:
+
+```powershell
+directional info
+python -m directional info
+```
+
+Run the headless remeshing pipeline from a compressed NumPy input file:
+
+```powershell
+directional remesh input.npz output.npz --length-ratio 0.02 --verbose
+```
+
+The input `.npz` file must contain:
+
+- `vertices`: `#V x 3` float array
+- `faces`: `#F x 3` integer array
+- either `raw_cross_field`: `#F x 12` float array, or `primary_directions`: `#F x 3` float array
+- optional `secondary_directions`: `#F x 3` float array when using explicit primary and secondary directions
+
+The output `.npz` file contains `success`, `vertices`, `faces`, `degrees`, and any cut-mesh arrays exposed by the native result object.
+
 ## Python API
 
 The wheel exposes a small headless remeshing API:
@@ -316,3 +371,14 @@ doi          = {10.5281/zenodo.3338174},
 url          = {https://doi.org/10.5281/zenodo.3338174}
 }
 ```
+
+## Tests
+
+Install test dependencies and run the lightweight unit suite with:
+
+```powershell
+python -m pip install -e .[test] --no-build-isolation
+python -m pytest
+```
+
+The included tests cover the Python CLI's error handling and `.npz` output behavior with a fake native backend, plus the optional native CLI CMake/source wiring. They do not require building the native extension.
