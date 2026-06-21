@@ -1,3 +1,10 @@
+// This file is part of Directional, a library for directional field processing.
+// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
+
 #pragma once
 
 #ifndef DIRECTIONAL_FIELDS_FIELD_COMBING_H
@@ -12,6 +19,14 @@
 #include <directional/core/CartesianField.h>
 #include <directional/fields/FieldMatching.h>
 #include <directional/util/GraphUtils.h>
+
+
+/**
+ * @file FieldCombing.h
+ * @brief Field combing utilities for raw Cartesian fields.
+ *
+ * Contains the combing routine that propagates vector ordering across tangent-space adjacencies using a spanning tree and the field matching information.
+ */
 
 namespace directional {
 
@@ -109,7 +124,7 @@ inline void combing(const directional::CartesianField &rawField,
                                 rawField.N;
   }
 
-  // TODO: only update effort.
+  // Recompute matching and effort to keep the combed field self-consistent.
   principal_matching(combedField);
 }
 

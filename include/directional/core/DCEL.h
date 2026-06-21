@@ -23,14 +23,30 @@
 
 #include <Eigen/Core>
 
+
+/**
+ * @file DCEL.h
+ * @brief Templated doubly connected edge list for mutable surface topology.
+ *
+ * Provides the halfedge data structure used throughout Directional for triangle meshes, cuts, collapse operations, representative halfedges, consistency checks, and topology traversal. The template parameters allow callers to attach payload data to vertices, halfedges, edges, and faces without changing the connectivity implementation.
+ */
+
 namespace directional {
 // This header file represents a class inplementing the doubly-connected edge
 // list, which is the underlying structure for reprsenting triangle meshes in
 // Directional.
 template <typename VertexData, typename HalfedgeData, typename EdgeData,
           typename FaceData>
+/**
+ * @brief Mutable halfedge mesh connectivity container.
+ *
+ * The DCEL stores vertices, directed halfedges, undirected edges, and faces. It
+ * supports topology construction, edge/face removal, degenerate cleanup, and
+ * consistency checks while preserving user-provided payload data on each entity.
+ */
 class DCEL {
 public:
+  /** @brief Vertex record with representative outgoing halfedge and payload. */
   struct Vertex {
     int ID;
     bool valid;
@@ -40,6 +56,7 @@ public:
     Vertex() : valid(true), halfedge(-1), ID(-1) {};
   };
 
+  /** @brief Directed halfedge record linking vertex, face, edge, twin, next, and previous ids. */
   struct Halfedge {
     int ID;
     bool valid;
@@ -52,6 +69,7 @@ public:
           twin(-1) {}
   };
 
+  /** @brief Undirected edge record storing one representative halfedge and payload. */
   struct Edge {
     int ID;
     bool valid;
@@ -61,6 +79,7 @@ public:
     Edge() : valid(true), halfedge(-1) {}
   };
 
+  /** @brief Face record storing one representative boundary halfedge and payload. */
   struct Face {
     int ID;
     bool valid;
@@ -78,6 +97,7 @@ public:
   DCEL() {}
   ~DCEL() {}
 
+  /** @brief Sort key used while pairing opposite halfedges during initialization. */
   struct TwinFinder {
     int index;
     int v1, v2;
@@ -407,6 +427,7 @@ public:
      * If removeWholeFace is true, every halfedge in cycle is removed.
      * Otherwise only targetHalfedge is spliced from the face cycle.
      */
+    /** @brief Describes one side-effectful connectivity update during edge cleanup. */
     struct SideAction {
       int targetHalfedge = -1;
       int face = -1;
@@ -2639,6 +2660,7 @@ public:
      *   false = vertex was not removed; DCEL is left unchanged
      */
 
+    /** @brief Compact record used to batch entity removal operations safely. */
     struct RemovalOp {
       int outgoing;   // halfedge starting at removed vertex
       int twin;       // opposite halfedge
@@ -2981,6 +3003,7 @@ public:
     for (int i = 0; i < vertices.size(); i++)
       vertices[i].ID = i;
 
+    /** @brief Comparator for edge endpoint pairs and their source indices. */
     struct ComparePairs {
       bool operator()(const std::pair<std::pair<int, int>, int> &a,
                       const std::pair<std::pair<int, int>, int> &b) const {

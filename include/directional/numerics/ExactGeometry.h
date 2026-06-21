@@ -5,6 +5,8 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+#pragma once
+
 #ifndef DIRECTIONAL_NUMERICS_EXACT_GEOMETRY_H
 #define DIRECTIONAL_NUMERICS_EXACT_GEOMETRY_H
 
@@ -31,6 +33,14 @@
 
 // This header file concentrates geometric operations on vectors, segments,
 // lines, and arrangement in exact rational numbers.
+
+/**
+ * @file ExactGeometry.h
+ * @brief Exact two-dimensional geometry predicates and constructions.
+ *
+ * Provides exact vectors, segments, lines, line pencils, intersections, area computations, and helper routines used by the N-function mesher to avoid floating-point robustness failures.
+ */
+
 namespace directional {
 
 template <size_t Size> class EVector {
@@ -149,6 +159,7 @@ std::ostream &operator<<(std::ostream &os, const EVector<Size> &evec) {
 typedef EVector<2> EVector2;
 typedef EVector<3> EVector3;
 
+/** @brief Exact 2D segment represented by two endpoints. */
 struct Segment2 {
 public:
   EVector2 source, target;
@@ -169,6 +180,7 @@ inline std::ostream &operator<<(std::ostream &os, const Segment2 &seg) {
   return os;
 }
 
+/** @brief Exact implicit 2D line with integer/rational coefficients. */
 struct Line2 {
 public:
   EVector2 point, direction;
@@ -191,6 +203,7 @@ inline std::ostream &operator<<(std::ostream &os, const Line2 &line) {
   return os;
 }
 
+/** @brief Family of parallel or related exact lines generated from a base line. */
 struct LinePencil {
   int numLines;
   EVector2 direction; // the mutual direction along the line

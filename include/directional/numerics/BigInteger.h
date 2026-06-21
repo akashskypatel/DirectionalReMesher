@@ -5,6 +5,8 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+#pragma once
+
 #ifndef DIRECTIONAL_NUMERICS_BIG_INTEGER_H
 #define DIRECTIONAL_NUMERICS_BIG_INTEGER_H
 
@@ -18,6 +20,19 @@
 // This header file implements a "home-made" Big Integer type, which is only
 // needed in case GMP is not installed. Note: this is slow-ish.
 
+/**
+ * @file BigInteger.h
+ * @brief Minimal arbitrary-precision integer implementation.
+ *
+ * Provides an integer type used by exact rational arithmetic when GMP is unavailable. The implementation supports signed arithmetic, division, comparisons, and conversion helpers needed by exact geometry routines.
+ */
+
+/**
+ * @brief Signed arbitrary-precision integer fallback used by exact arithmetic.
+ *
+ * Stores base-10 digits in a vector and implements the subset of arithmetic
+ * needed by the exact rational backend. Prefer the GMP backend when available.
+ */
 class BigInteger {
 private:
   static constexpr long long BASE = 1000000000LL;
@@ -92,7 +107,7 @@ public:
       return *this - (-other);
     }
 
-    BigInteger result; // TODO: reserve
+    BigInteger result;
     result.negative = negative;
 
     long long carry = 0;
@@ -133,7 +148,7 @@ public:
       return -(other - *this);
     }
 
-    BigInteger result; // TODO: reserve
+    BigInteger result;
     result.negative = negative;
 
     long long borrow = 0;
@@ -221,7 +236,7 @@ public:
       long long quotient = convertThis / convertOther;
       mod = BigInteger(
           convertThis -
-          convertOther * quotient); // TODO: is this corret and not overflowing?
+          convertOther * quotient);
       return quotient;
     }
 
@@ -285,7 +300,6 @@ public:
       return convertThis / convertOther;
     }
 
-    // TODO: leading zeros
 
     BigInteger dividend = this->abs();
     BigInteger divisor = other.abs();

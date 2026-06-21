@@ -5,6 +5,8 @@
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can
 // obtain one at http://mozilla.org/MPL/2.0/.
 
+#pragma once
+
 #ifndef DIRECTIONAL_FIELDS_PIECWISE_CONSTANT_FACE_TANGENT_BUNDLE_H
 #define DIRECTIONAL_FIELDS_PIECWISE_CONSTANT_FACE_TANGENT_BUNDLE_H
 
@@ -25,8 +27,23 @@
  around vertices, with curvature being discrete angle defect.
  ***/
 
+
+/**
+ * @file PCFaceTangentBundle.h
+ * @brief Piecewise-constant face tangent bundle implementation.
+ *
+ * Defines a tangent bundle whose sources are mesh faces. It constructs per-face tangent bases, face adjacencies, connection rotations, local cycles, and mass matrices from a TriMesh.
+ */
+
 namespace directional {
 
+/**
+ * @brief Face-based piecewise-constant tangent bundle.
+ *
+ * Each triangle face contributes one tangent space located at its barycenter.
+ * Adjacencies follow dual edges, and local bases are taken from the TriMesh face
+ * frames.
+ */
 class PCFaceTangentBundle : public TangentBundle {
 public:
   const TriMesh *mesh;
@@ -75,16 +92,10 @@ public:
       connection(i) = eg / ef;
     }
 
-    // TODO: cycles, cycleCurvature
     directional::dual_cycles(*mesh, cycles, cycleCurvatures, local2Cycle,
                              innerAdjacencies);
 
-    // drawing from mesh geometry
-
-    /************masses****************/
-
-    // mass are face areas
-    // igl::doublearea(mesh->V,mesh->F,tangentSpaceMass);
+    // Face area is the natural mass for piecewise-constant face fields.
 
     tangentSpaceMass = directional::sparse_diagonal(mesh->faceAreas);
     Eigen::VectorXd invFaceAreas = mesh->faceAreas.array().inverse();

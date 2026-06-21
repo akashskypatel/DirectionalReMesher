@@ -1,3 +1,9 @@
+// This file is part of Directional, a library for directional field processing.
+// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
 
@@ -22,6 +28,14 @@
 #include <directional/integration/IntegrationData.h>
 #include <directional/integration/Integrate.h>
 #include <directional/util/GraphUtils.h>
+
+
+/**
+ * @file SetupIntegration.h
+ * @brief Assembly routines for integration linear systems.
+ *
+ * Builds sparse constraints, period jumps, reduced variables, and symmetry data needed before running the integration solver.
+ */
 
 namespace directional {
 inline int eigen_index_to_int(const Eigen::Index value) {
@@ -60,8 +74,6 @@ inline void setup_integration(const directional::CartesianField &field,
                               intData.face2cut);
   combing(field, combedField, intData.face2cut);
 
-  // std::cout<<"intData.face2cut: "<<intData.face2cut<<endl;
-  //  std::cout<<"combedField.matching: "<<combedField.matching<<endl;
 
   // MatrixXi EFi,EH, FH;
   // MatrixXd FEs;
@@ -496,7 +508,7 @@ inline void setup_integration(const directional::CartesianField &field,
 
   // filtering out barycentric symmetry, including sign symmetry. The
   // parameterization should always only include n dof for the surface
-  // TODO: this assumes n divides N!
+  // The symmetry reduction repeats n-function packets across the N layers.
   intData.linRedMat.resize(intData.N * (meshWhole.V.rows() + numTransitions),
                            intData.n * (meshWhole.V.rows() + numTransitions));
   intData.linRedMatInteger.resize(

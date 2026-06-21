@@ -1,6 +1,11 @@
+// This file is part of Directional, a library for directional field processing.
+// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
 //
-// Created by Amir Vaxman on 20.04.24.
-//
+// This Source Code Form is subject to the terms of the Mozilla Public License
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
+
+#pragma once
 
 #ifndef DIRECTIONAL_MESHING_N_FUNCTION_MESHER
 #define DIRECTIONAL_MESHING_N_FUNCTION_MESHER
@@ -29,13 +34,29 @@
 #include <directional/meshing/SetupMesher.h>
 #include <directional/numerics/ExactGeometry.h>
 
+
+/**
+ * @file NFunctionMesher.h
+ * @brief Mesher implementation for integrated N-functions.
+ *
+ * Defines the data structures and algorithms used to convert an integrated N-function into explicit polygonal output by constructing and simplifying per-triangle segment arrangements.
+ */
+
 namespace directional {
 
+/**
+ * @brief Converts an integrated N-function into explicit mesh geometry.
+ *
+ * The mesher traces integer isolines inside each triangle, builds exact segment
+ * arrangements, simplifies redundant geometry, and emits a polygonal mesh with
+ * vertex degrees and source mappings.
+ */
 class NFunctionMesher {
 public:
   const TriMesh &origMesh;
   const MesherData &mData;
 
+  /** @brief Metadata attached to an exact arrangement segment. */
   struct SegmentData {
     bool isFunction = false;
     int origNFunctionIndex = -1;
@@ -49,6 +70,7 @@ public:
           lineInPencil(-1), origHalfedge(-1), intParams() {}
   };
 
+  /** @brief Payload stored on function-DCEL vertices. */
   struct VData {
     Eigen::RowVector3d coords;
     EVector3 eCoords;
@@ -86,6 +108,7 @@ public:
 
   void TestUnmatchedTwins();
 
+  /** @brief Pair of matched point ids used during seam and band matching. */
   struct PointPair {
     int Index1, Index2;
     ENumber Distance;
@@ -129,6 +152,7 @@ public:
     return static_cast<double>((a - b).max_abs().to_double());
   }
 
+  /** @brief Lightweight accessor that exposes a vertex coordinate set through a uniform interface. */
   class VertexCoordinateView {
   public:
     VertexCoordinateView(const FunctionDCEL &dcel,
@@ -255,6 +279,7 @@ public:
     return Result;
   }
 
+  /** @brief Result buffers for band-limited point matching. */
   struct BandedMatchResult {
     bool success = false;
     bool touchedBandBoundary = false;
@@ -277,7 +302,8 @@ public:
       return output;
     }
 
-    struct PredRow {
+    /** @brief Predecessor row used by dynamic-programming band matching. */
+  struct PredRow {
       std::size_t begin = 0;
       std::vector<std::uint8_t> direction;
     };
@@ -510,6 +536,7 @@ public:
     }
   }
 
+  /** @brief Reusable workspace for arrangement simplification. */
   struct SimplifyScratch {
     int maxOrigHE = -1;
     std::vector<bool> visitedOrig;
@@ -4066,6 +4093,7 @@ public:
      * storage avoids one vector allocation per edge.
      * ------------------------------------------------------------------
      */
+    /** @brief Tracks surviving edges after local simplification. */
     struct EdgeSurvivors {
       int first = -1;
       int second = -1;
@@ -5742,6 +5770,7 @@ public:
       return -1;
     };
 
+    /** @brief Candidate seam connection considered during generated mesh stitching. */
     struct SeamCandidate {
       int rotation = -1;
 

@@ -1,3 +1,9 @@
+// This file is part of Directional, a library for directional field processing.
+// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
+//
+// This Source Code Form is subject to the terms of the Mozilla Public License
+// v. 2.0. If a copy of the MPL was not distributed with this file, You can
+// obtain one at http://mozilla.org/MPL/2.0/.
 
 #pragma once
 
@@ -13,6 +19,14 @@
 
 #include <directional/util/EigenIndexUtils.h>
 #include <directional/util/GraphUtils.h>
+
+
+/**
+ * @file MeshTopology.h
+ * @brief Topology construction routines for primal and dual mesh cycles.
+ *
+ * Builds polygonal edge topology and cycle bases used by tangent bundles, field matching, integration constraints, and boundary handling.
+ */
 
 namespace directional {
 
@@ -234,7 +248,6 @@ inline void dual_cycles(const TriMesh &mesh,
       if (isinTree(i))
         continue;
 
-      // std::cout<<"New Cycle"<<std::endl;
       // otherwise, follow both end faces to the root and this is the dual cycle
       if (mesh.EF(i, 0) == -1 || mesh.EF(i, 1) == -1)
         continue;
@@ -254,7 +267,6 @@ inline void dual_cycles(const TriMesh &mesh,
         }
 
         while (currTreeEdge != -1) {
-          // std::cout<<"currTreeEdge: "<<currTreeEdge<<"\n"<<std::endl;
           // determining orientation of current edge vs. face
           double sign =
               ((mesh.EF(currTreeEdge, 0) == currFace) != (leaf == 0) ? 1.0
@@ -389,7 +401,7 @@ inline void dual_cycles(const TriMesh &mesh,
   // 2*pi*|cycle| for internal cycles or pi*|cycle| for boundary cycles.
   cycleCurvature = VectorXd::Zero(basisCycles.rows());
   VectorXi isBigCycle = VectorXi::Ones(
-      basisCycles.rows()); // TODO: retain it rather then reverse-engineer...
+      basisCycles.rows());
 
   for (int i = 0; i < mesh.V.rows(); i++) // inner cycles
     if (!isBoundary(i))

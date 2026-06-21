@@ -1,9 +1,11 @@
 // This file is part of Directional, a library for directional field processing.
-// Copyright (C) 2021 Amir Vaxman <avaxman@gmail.com>
+// Copyright (C) 2025 Amir Vaxman <avaxman@gmail.com>
 //
 // This Source Code Form is subject to the terms of the Mozilla Public License
 // v. 2.0. If a copy of the MPL was not distributed with this file, You can
 // obtain one at http://mozilla.org/MPL/2.0/.
+
+#pragma once
 
 #ifndef DIRECTIONAL_INTEGRATION_INTEGRATE_H
 #define DIRECTIONAL_INTEGRATION_INTEGRATE_H
@@ -56,6 +58,14 @@
 #define DIRECTIONAL_UMFPACK_SCALE UMFPACK_SCALE_SUM
 #endif
 #endif
+
+
+/**
+ * @file Integrate.h
+ * @brief Integer-grid integration solver for directional fields.
+ *
+ * Implements the mixed-integer style integration stage used to convert a combed field into an N-function. The solver builds candidate integer period shifts, evaluates objectives, and records timing diagnostics.
+ */
 
 namespace directional {
 
@@ -123,7 +133,8 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
            1.0e6;
   };
 
-  struct IterativeSolveTimings {
+  /** @brief Wall-clock timing breakdown for iterative integer solve phases. */
+struct IterativeSolveTimings {
     double fullEnergyPrecompute = 0.0;
     double freeVariableMap = 0.0;
     double reducedOperatorExtraction = 0.0;
@@ -257,7 +268,7 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
 
   int numVars = to_storage_index(intData.linRedMat.cols());
   // constructing face differentials
-  // TODO: convert to the common branched gradient operator
+  // Assemble the branched differential operator used by this integration path.
   vector<Triplet<double>> d0Triplets;
   vector<Triplet<double>> M1Triplets;
   VectorXd gamma(3 * intData.N * meshWhole.F.rows());
@@ -1065,7 +1076,8 @@ integrate(const directional::CartesianField &field, IntegrationData &intData,
 
     const auto candidateSelectionStart = Clock::now();
 
-    struct IntegerCandidate {
+    /** @brief Candidate integer variable value and its local objective score. */
+struct IntegerCandidate {
       int index = -1;
       double value = 0.0;
       double roundedValue = 0.0;
