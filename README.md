@@ -356,6 +356,16 @@ cmake -S . -B build\standalone -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX
 cmake --build build\standalone --config Release --target directional
 cmake --install build\standalone --config Release
 ```
+## Tests
+
+Install test dependencies and run the lightweight unit suite with:
+
+```powershell
+python -m pip install -e .[test] --no-build-isolation
+python -m pytest
+```
+
+The included tests cover the Python CLI's error handling and `.npz` output behavior with a fake native backend, plus the optional native CLI CMake/source wiring. They do not require building the native extension.
 
 ## Citation
 
@@ -371,14 +381,3 @@ doi          = {10.5281/zenodo.3338174},
 url          = {https://doi.org/10.5281/zenodo.3338174}
 }
 ```
-
-## Tests
-
-Install test dependencies and run the lightweight unit suite with:
-
-```powershell
-python -m pip install -e .[test] --no-build-isolation
-python -m pytest
-```
-
-The included tests cover the Python CLI's error handling and `.npz` output behavior with a fake native backend, plus the optional native CLI CMake/source wiring. They do not require building the native extension.
