@@ -40,7 +40,7 @@ if(DIRECTIONAL_ENABLE_SUITESPARSE OR DIRECTIONAL_ENABLE_METIS_SUITESPARSE)
   include(DirectionalDependenciesSuiteSparse)
 endif()
 
-add_library(directional SHARED src/directional_core.cpp)
+add_library(directional SHARED src/core/Library.cpp)
 add_library(Directional::directional ALIAS directional)
 
 set_target_properties(directional PROPERTIES OUTPUT_NAME directional
@@ -139,7 +139,7 @@ if(BUILD_TUTORIALS)
 endif()
 
 if(DIRECTIONAL_BUILD_CLI)
-  add_executable(directional_cli src/directional_cli.cpp)
+  add_executable(directional_cli src/cli/Main.cpp)
   add_executable(Directional::directional_cli ALIAS directional_cli)
   set_target_properties(directional_cli PROPERTIES OUTPUT_NAME directional)
   target_link_libraries(directional_cli PRIVATE Directional::directional)
