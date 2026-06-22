@@ -58,10 +58,12 @@ python -m pip install -r requirements.txt
 
 ## Pure CMake Build
 
-Common GMP flags for all CMake examples:
+Common flags for all CMake examples:
 
 ```powershell
 -DDIRECTIONAL_ENABLE_GMP=ON|OFF
+-DDIRECTIONAL_BUILD_CLI=ON|OFF
+-DDIRECTIONAL_ENABLE_SUITESPARSE=ON|OFF
 ```
 
 Examples:
@@ -79,6 +81,7 @@ cmake -S . -B build\standalone `
   -DCMAKE_INSTALL_PREFIX=%CD%\build\standalone\install `
   -DBUILD_PYTHON=OFF `
   -DDIRECTIONAL_ENABLE_GMP=ON `
+  -DDIRECTIONAL_ENABLE_SUITESPARSE=ON
 
 cmake --build build\standalone --config Release --target directional
 cmake --install build\standalone --config Release
@@ -96,15 +99,9 @@ Artifacts:
 The native executable is intentionally opt-in so it does not collide with the Python `directional` console script. Enable it with `DIRECTIONAL_BUILD_CLI=ON`:
 
 ```powershell
-cmake -S . -B build\standalone-cli `
-  -DCMAKE_BUILD_TYPE=Release `
-  -DCMAKE_INSTALL_PREFIX=%CD%\build\standalone-cli\install `
-  -DBUILD_PYTHON=OFF `
-  -DDIRECTIONAL_BUILD_CLI=ON `
-  -DDIRECTIONAL_ENABLE_GMP=ON
+cmake -S . -B build/native-cli-test -DDIRECTIONAL_BUILD_CLI=ON -DBUILD_PYTHON=OFF
 
-cmake --build build\standalone-cli --config Release --target directional_cli
-cmake --install build\standalone-cli --config Release
+cmake --build build/native-cli-test --target directional_cli
 ```
 
 The installed native command is:
@@ -153,6 +150,7 @@ cmake -S . -B build\python `
   -DBUILD_PYTHON=ON `
   -Dpybind11_DIR="C:\path\reported\by\pybind11\cmakedir" `
   -DDIRECTIONAL_ENABLE_GMP=ON `
+  -DDIRECTIONAL_ENABLE_SUITESPARSE=ON
 
 cmake --build build\python --config Release --target _directional
 cmake --install build\python --config Release

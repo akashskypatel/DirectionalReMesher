@@ -10,7 +10,6 @@ project(
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
-option(BUILD_TUTORIALS "Build Directional tutorials" OFF)
 option(BUILD_PYTHON "Build Python bindings" OFF)
 option(DIRECTIONAL_BUILD_CLI "Build the optional native command line executable" OFF)
 option(BUILD_SHARED_LIBS "Build shared libraries" ON)
@@ -40,7 +39,9 @@ if(DIRECTIONAL_ENABLE_SUITESPARSE OR DIRECTIONAL_ENABLE_METIS_SUITESPARSE)
   include(DirectionalDependenciesSuiteSparse)
 endif()
 
-add_library(directional SHARED src/core/Library.cpp)
+add_library(directional SHARED
+  src/core/Library.cpp
+  src/fields/CrossField.cpp)
 add_library(Directional::directional ALIAS directional)
 
 set_target_properties(directional PROPERTIES OUTPUT_NAME directional
@@ -134,17 +135,29 @@ if(DIRECTIONAL_ENABLE_GMP)
   endif()
 endif()
 
-if(BUILD_TUTORIALS)
-  add_subdirectory(tutorial)
-endif()
-
 if(DIRECTIONAL_BUILD_CLI)
-  add_executable(directional_cli src/cli/Main.cpp)
+  add_executable(
+    directional_cli
+    src/cli/Main.cpp
+    src/cli/Usage.cpp
+    src/cli/InfoCommand.cpp
+    src/cli/MeshIO.cpp
+    src/cli/CrossFieldOutput.cpp
+    src/cli/CrossFieldCommand.cpp)
   add_executable(Directional::directional_cli ALIAS directional_cli)
   set_target_properties(directional_cli PROPERTIES OUTPUT_NAME directional)
   target_link_libraries(directional_cli PRIVATE Directional::directional)
   target_compile_features(directional_cli PRIVATE cxx_std_20)
   target_compile_definitions(directional_cli PRIVATE DIRECTIONAL_VERSION="${PROJECT_VERSION}")
+
+  # CrossFieldCommand.cpp is the only CLI translation unit that includes the
+  # template-heavy field implementation. Keep MSVC's expanded COFF section
+  # limit scoped to that source instead of applying /bigobj to the entire CLI.
+  if(MSVC)
+    set_source_files_properties(
+      src/cli/CrossFieldCommand.cpp
+      PROPERTIES COMPILE_OPTIONS "/bigobj")
+  endif()
 endif()
 
 if(BUILD_PYTHON)
@@ -179,12 +192,6 @@ if(WIN32)
   install(FILES $<TARGET_RUNTIME_DLLS:directional>
           DESTINATION "${CMAKE_INSTALL_BINDIR}")
   if(DIRECTIONAL_ENABLE_METIS_SUITESPARSE)
-    foreach(_excluded IN LISTS _directional_tutorials_exclude)
-      get_target_property(_runtime_dll SuiteSparse::${_excluded} SUITESPARSE_RUNTIME_DLL)
-      if(_runtime_dll)
-        install(FILES "${_runtime_dll}" DESTINATION "${CMAKE_INSTALL_BINDIR}")
-      endif()
-    endforeach()
   endif()
 endif()
 
