@@ -45,7 +45,7 @@ def test_remesh_raw_cross_field_writes_npz(monkeypatch, tmp_path):
         lengthRatio = None
         integralSeamless = None
         roundSeams = None
-        featureAlign = None
+        # featureAlign = None
         verbose = None
         normalizeDirections = None
 

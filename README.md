@@ -9,6 +9,8 @@ This fork supports two build workflows:
 - pure CMake for native C++ consumers
 - Python packaging builds via `setup.py` and `pip`
 
+Optionally, you can include this library in your source by simply cloning this repository as a submodule or copying the source files directly into your project and including the headers in your source code.
+
 ## What This Repository Builds
 
 The top-level build supports three modes:
@@ -99,9 +101,11 @@ Artifacts:
 The native executable is intentionally opt-in so it does not collide with the Python `directional` console script. Enable it with `DIRECTIONAL_BUILD_CLI=ON`:
 
 ```powershell
-cmake -S . -B build/native-cli-test -DDIRECTIONAL_BUILD_CLI=ON -DBUILD_PYTHON=OFF
+cmake -S . -B build/native-cli -DDIRECTIONAL_BUILD_CLI=ON -DBUILD_PYTHON=OFF -DCMAKE_INSTALL_PREFIX=build/native-cli-release
 
-cmake --build build/native-cli-test --target directional_cli
+cmake --build build/native-cli --target directional_cli --config Release
+
+cmake --install build/native-cli
 ```
 
 The installed native command is:
