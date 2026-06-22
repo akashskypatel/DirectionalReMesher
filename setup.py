@@ -229,33 +229,6 @@ def _copy_runtime_dlls_to_targets(target_dirs: list[Path], source_dirs: list[Pat
         target_dir.mkdir(parents=True, exist_ok=True)
         _copy_runtime_dlls(target_dir, source_dirs)
 
-
-def _tutorial_runtime_dll_dirs(self, build_dir: Path) -> list[Path]:
-    runtime_dirs: list[Path] = [build_dir / "Release", build_dir / "Debug", build_dir / "RelWithDebInfo", build_dir / "MinSizeRel"]
-    if self.enable_gmp or (self.enable_suitesparse and self.disable_metis_suitesparse):
-        vcpkg_triplets = ["x64-windows", "xw"]
-    elif self.enable_suitesparse and self.disable_metis_suitesparse:
-        vcpkg_triplets = ["xw"]
-    else:
-        vcpkg_triplets = []
-    for triplet in vcpkg_triplets:
-        runtime_dirs.extend(
-            [
-                build_dir / "_deps" / "vcpkg-src" / "installed" / triplet / "bin",
-                build_dir / "_deps" / "vcpkg-src" / "installed" / triplet / "debug" / "bin",
-                ROOT / "vcpkg_installed" / triplet / "bin",
-                ROOT / "vcpkg_installed" / triplet / "debug" / "bin",
-            ]
-        )
-        runtime_dirs.extend(
-            [
-                ROOT / "external" / "vcpkg" / "packages" / f"gmp_{triplet}" / "bin",
-                ROOT / "external" / "vcpkg" / "installed" / triplet / "bin",
-            ]
-        )
-    return runtime_dirs
-
-
 class CMakeExtension(Extension):
     def __init__(self, name: str, sourcedir: str = ".") -> None:
         super().__init__(name, sources=[])
@@ -312,7 +285,6 @@ class BuildStandalone(Command):
         configure_args = _cmake_args(
             install_dir,
             [
-                "-DBUILD_TUTORIALS=OFF",
                 "-DBUILD_PYTHON=OFF",
                 f"-DDIRECTIONAL_ENABLE_GMP={_as_cmake_bool(bool(self.enable_gmp))}",
                 f"-DDIRECTIONAL_ENABLE_SUITESPARSE={_as_cmake_bool(bool(self.enable_suitesparse))}",
@@ -322,68 +294,6 @@ class BuildStandalone(Command):
         )
         _configure_and_build(build_dir, configure_args, build_target="directional_cli" if self.build_cli else "directional")
         _run(["cmake", "--install", str(build_dir), "--config", "Release"])
-
-
-class BuildTutorials(Command):
-    description = "Build the Directional tutorial suite or a selected tutorial subset"
-    user_options = [
-        ("build-dir=", None, "Build directory"),
-        ("tutorial=", None, "Tutorial prefix like 501 or full directory name; comma-separated lists are supported"),
-        ("enable-gmp", None, "Enable GMP support if found"),
-        ("disable-gmp", None, "Disable GMP support"),
-        ("auto-install-gmp", None, "Attempt to auto-install GMP on supported platforms"),
-        ("no-auto-install-gmp", None, "Disable GMP auto-install attempts"),
-        ("enable-suitesparse", None, "Enable SuiteSparse support"),
-        ("disable-suitesparse", None, "Disable SuiteSparse support"),
-        ("enable-metis-suitesparse", None, "Enable METIS support in SuiteSparse"),
-        ("disable-metis-suitesparse", None, "Disable METIS support in SuiteSparse"),
-    ]
-    boolean_options = ["enable-gmp", "disable-gmp", "auto-install-gmp", "no-auto-install-gmp", "enable-suitesparse", "disable-suitesparse", "enable-metis-suitesparse", "disable-metis-suitesparse"]
-
-    def initialize_options(self) -> None:
-        self.build_dir = None
-        self.tutorial = None
-        self.enable_gmp = _env_bool("DIRECTIONAL_DIRECTIONAL_ENABLE_GMP", True)
-        self.disable_gmp = False
-        self.enable_metis_suitesparse = _env_bool("DIRECTIONAL_ENABLE_METIS_SUITESPARSE", False)
-        self.disable_metis_suitesparse = False
-        self.enable_suitesparse = _env_bool("DIRECTIONAL_ENABLE_SUITESPARSE", True)
-        self.disable_suitesparse = False
-
-    def finalize_options(self) -> None:
-        if self.tutorial is not None:
-            self.tutorial = self.tutorial.strip()
-            if not self.tutorial:
-                self.tutorial = None
-        if self.disable_gmp:
-            self.enable_gmp = False
-        if self.disable_suitesparse:
-            self.enable_suitesparse = False
-        if self.disable_metis_suitesparse:
-            self.enable_metis_suitesparse = False
-        if self.build_dir is None:
-            if self.tutorial is None:
-                self.build_dir = str(_build_dir("tutorials"))
-            else:
-                self.build_dir = str(_build_dir(f"tutorials-{_safe_build_name(self.tutorial)}"))
-
-    def run(self) -> None:
-        build_dir = Path(self.build_dir)
-        selected_tutorials = self.tutorial or "ALL"
-        configure_args = _cmake_args(
-            build_dir / "install",
-            [
-                "-DBUILD_SHARED_LIBS=OFF",
-                "-DBUILD_TUTORIALS=ON",
-                "-DBUILD_PYTHON=OFF",
-                f"-DDIRECTIONAL_TUTORIALS={selected_tutorials}",
-                f"-DDIRECTIONAL_ENABLE_GMP={_as_cmake_bool(bool(self.enable_gmp))}",
-                f"-DDIRECTIONAL_ENABLE_SUITESPARSE={_as_cmake_bool(bool(self.enable_suitesparse))}",
-                f"-DDIRECTIONAL_ENABLE_METIS_SUITESPARSE={_as_cmake_bool(bool(self.enable_metis_suitesparse))}",
-            ],
-        )
-        _configure_and_build(build_dir, configure_args)
-
 
 class CMakeBuildExt(build_ext):
     user_options = build_ext.user_options + [
@@ -440,7 +350,6 @@ class CMakeBuildExt(build_ext):
         configure_args = _cmake_args(
             install_dir,
             [
-                "-DBUILD_TUTORIALS=OFF",
                 "-DBUILD_PYTHON=ON",
                 f"-Dpybind11_DIR={pybind11_dir}",
                 f"-DDIRECTIONAL_ENABLE_GMP={_as_cmake_bool(bool(self.enable_gmp))}",
@@ -471,7 +380,7 @@ class CMakeBuildExt(build_ext):
 setup(
     name="directional",
     version="0.1.0",
-    description="Directional field processing library with standalone, tutorial, and Python wheel builds",
+    description="Directional field processing library with standalone, native cli, and Python wheel builds",
     packages=find_packages(where="python"),
     package_dir={"": "python"},
     package_data={"directional": ["*.dll", "*.dylib", "*.so"]},
@@ -485,8 +394,6 @@ setup(
     cmdclass={
         "build_standalone": BuildStandalone,
         "standalone": BuildStandalone,
-        "build_tutorials": BuildTutorials,
-        "tutorials": BuildTutorials,
         "build_ext": CMakeBuildExt,
     },
     zip_safe=False,

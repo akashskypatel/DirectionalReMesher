@@ -13,11 +13,11 @@ Optionally, you can include this library in your source by simply cloning this r
 
 ## What This Repository Builds
 
-The top-level build supports three modes:
+The top-level build supports two modes:
 
 1. `directional` standalone shared library
-2. tutorial executables
-3. Python package / wheel exposing the headless remeshing API
+2. Python package / wheel exposing the headless remeshing API
+3. Native CLI executable
 
 Key build toggles:
 
@@ -327,7 +327,6 @@ Use `setup.py` when:
 
 - you want the fastest local build entrypoint
 - you want to produce a Python wheel
-- you want one-command tutorial builds
 
 Use `pip` when:
 
@@ -339,7 +338,6 @@ Use `pip` when:
 - The installed C++ package exports `Directional::directional`.
 - The current standalone library is intentionally minimal; most functionality remains header-driven.
 - The Python wheel is platform-specific because it contains a compiled extension module.
-- Tutorial and Python builds depend on the same top-level CMake project; `setup.py` is only a wrapper over that build.
 
 ## Verified Commands
 
