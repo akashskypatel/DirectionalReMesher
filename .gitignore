@@ -49,6 +49,7 @@ vcpkg_installed/
 AGENTS.md
 CLAUDE.md
 data/
+.data/
 tutorial/
 .deps/*
 .agents/
