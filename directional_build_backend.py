@@ -8,7 +8,7 @@ from setuptools import build_meta as _build_meta
 
 
 _BUILD_SETTING_MAPPINGS = {
-    "DIRECTIONAL_ENABLE_GMP": ("use-gmp", "directional.use-gmp"),
+    "DIRECTIONAL_ENABLE_GMP": ("enable-gmp", "directional.enable-gmp"),
     "DIRECTIONAL_ENABLE_SUITESPARSE": (
         "enable-suitesparse",
         "directional.enable-suitesparse",
