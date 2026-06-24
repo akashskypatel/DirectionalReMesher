@@ -4,12 +4,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 project(
   Directional
-  VERSION 0.1.0
+  VERSION 1.0.0
   LANGUAGES CXX)
 
 include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
+# option(BUILD_TUTORIALS "Build Directional tutorials" OFF)
 option(BUILD_PYTHON "Build Python bindings" OFF)
 option(DIRECTIONAL_BUILD_CLI "Build the optional native command line executable" OFF)
 option(DIRECTIONAL_BUILD_GUI "Build the optional Polyscope desktop UI" OFF)
@@ -90,7 +91,7 @@ add_library(Directional::directional ALIAS directional)
 
 set_target_properties(directional PROPERTIES OUTPUT_NAME directional
                                              WINDOWS_EXPORT_ALL_SYMBOLS ON)
-
+target_compile_definitions(directional INTERFACE DIRECTIONAL_VERSION="\"${CMAKE_PROJECT_VERSION}\"")
 target_include_directories(
   directional
   PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -185,6 +186,10 @@ if(DIRECTIONAL_ENABLE_GMP)
   endif()
 endif()
 
+# if(BUILD_TUTORIALS)
+#   add_subdirectory(tutorial)
+# endif()
+
 if(DIRECTIONAL_BUILD_TESTS)
   enable_testing()
   set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
@@ -219,7 +224,7 @@ if(DIRECTIONAL_BUILD_CLI OR BUILD_PYTHON OR DIRECTIONAL_BUILD_GUI)
   set_target_properties(directional_cli_io PROPERTIES POSITION_INDEPENDENT_CODE ON)
   target_link_libraries(directional_cli_io PUBLIC Directional::directional)
   target_compile_features(directional_cli_io PUBLIC cxx_std_20)
-
+  target_compile_definitions(directional_cli_io INTERFACE DIRECTIONAL_VERSION="\"${CMAKE_PROJECT_VERSION}\"")
   if(DIRECTIONAL_BUILD_CLI OR BUILD_PYTHON)
     add_library(
       directional_cli_backend STATIC
@@ -236,7 +241,7 @@ if(DIRECTIONAL_BUILD_CLI OR BUILD_PYTHON OR DIRECTIONAL_BUILD_GUI)
         Directional::directional_cli_io)
     target_compile_features(directional_cli_backend PUBLIC cxx_std_20)
     target_compile_definitions(
-      directional_cli_backend PRIVATE DIRECTIONAL_VERSION="${PROJECT_VERSION}")
+      directional_cli_backend PRIVATE DIRECTIONAL_VERSION="${CMAKE_PROJECT_VERSION}")
 
     # Keep MSVC's expanded COFF section limit scoped to the two translation
     # units that instantiate Directional's template-heavy field and pipeline APIs.
@@ -259,6 +264,7 @@ if(DIRECTIONAL_BUILD_CLI)
   set_target_properties(directional_cli PROPERTIES OUTPUT_NAME directional)
   target_link_libraries(directional_cli PRIVATE Directional::directional_cli_backend)
   target_compile_features(directional_cli PRIVATE cxx_std_20)
+  target_compile_definitions(directional_cli PRIVATE DIRECTIONAL_VERSION="${CMAKE_PROJECT_VERSION}")
   if(DIRECTIONAL_ENABLE_PARDISO)
     _directional_copy_pardiso_runtime_to_target(directional_cli)
   endif()
@@ -303,6 +309,7 @@ if(DIRECTIONAL_BUILD_GUI)
   unset(_directional_gui_sources)
   add_executable(Directional::directional_gui ALIAS directional_gui)
   set_target_properties(directional_gui PROPERTIES OUTPUT_NAME directional-ui)
+  target_compile_definitions(directional_gui PRIVATE DIRECTIONAL_VERSION="${CMAKE_PROJECT_VERSION}")
   target_link_libraries(
     directional_gui
     PRIVATE
@@ -379,6 +386,7 @@ if(BUILD_PYTHON)
     _directional PRIVATE Directional::directional
                          Directional::directional_cli_backend)
   target_compile_features(_directional PRIVATE cxx_std_20)
+  target_compile_definitions(_directional INTERFACE DIRECTIONAL_VERSION="\"${CMAKE_PROJECT_VERSION}\"")
   if(DIRECTIONAL_ENABLE_PARDISO)
     _directional_copy_pardiso_runtime_to_target(_directional)
   endif()
@@ -458,7 +466,7 @@ configure_package_config_file(
 
 write_basic_package_version_file(
   ${CMAKE_CURRENT_BINARY_DIR}/DirectionalConfigVersion.cmake
-  VERSION ${PROJECT_VERSION}
+  VERSION ${CMAKE_PROJECT_VERSION}
   COMPATIBILITY SameMajorVersion)
 
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/DirectionalConfig.cmake

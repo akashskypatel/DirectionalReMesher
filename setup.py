@@ -557,7 +557,7 @@ class CMakeBuildExt(build_ext):
 
 setup(
     name="directional",
-    version="0.1.0",
+    version="1.0.0",
     description=(
         "Directional field processing library with standalone, "
         "native CLI, Polyscope UI, and Python wheel builds"
