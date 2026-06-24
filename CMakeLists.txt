@@ -283,12 +283,24 @@ if(DIRECTIONAL_BUILD_GUI)
     add_dependencies(polyscope imgui)
   endif()
 
-  add_executable(
-    directional_gui
-    src/gui/Main.cpp
-    src/gui/GuiBackend.cpp
-    src/gui/GuiField.cpp
-    src/gui/GuiRemesh.cpp)
+  set(_directional_gui_sources
+      src/gui/Main.cpp
+      src/gui/FilePicker.cpp
+      src/gui/GuiBackend.cpp
+      src/gui/GuiField.cpp
+      src/gui/GuiRemesh.cpp)
+
+  if(WIN32)
+    list(APPEND _directional_gui_sources src/gui/FileDialogWindows.cpp)
+  elseif(APPLE)
+    enable_language(OBJCXX)
+    list(APPEND _directional_gui_sources src/gui/FileDialogMac.mm)
+  elseif(UNIX)
+    list(APPEND _directional_gui_sources src/gui/FileDialogLinux.cpp)
+  endif()
+
+  add_executable(directional_gui ${_directional_gui_sources})
+  unset(_directional_gui_sources)
   add_executable(Directional::directional_gui ALIAS directional_gui)
   set_target_properties(directional_gui PROPERTIES OUTPUT_NAME directional-ui)
   target_link_libraries(
@@ -296,11 +308,47 @@ if(DIRECTIONAL_BUILD_GUI)
     PRIVATE
       Directional::directional_cli_io
       polyscope)
+
+  if(WIN32)
+    target_link_libraries(directional_gui PRIVATE ole32 shell32 uuid)
+  elseif(APPLE)
+    find_library(DIRECTIONAL_APPKIT_FRAMEWORK AppKit REQUIRED)
+    find_library(DIRECTIONAL_UTTYPE_FRAMEWORK UniformTypeIdentifiers REQUIRED)
+    target_link_libraries(
+      directional_gui
+      PRIVATE
+        ${DIRECTIONAL_APPKIT_FRAMEWORK}
+        ${DIRECTIONAL_UTTYPE_FRAMEWORK})
+  elseif(UNIX)
+    find_package(PkgConfig QUIET)
+    if(PkgConfig_FOUND)
+      pkg_check_modules(DIRECTIONAL_GIO QUIET IMPORTED_TARGET gio-2.0)
+    endif()
+
+    if(TARGET PkgConfig::DIRECTIONAL_GIO)
+      target_compile_definitions(
+        directional_gui PRIVATE DIRECTIONAL_GUI_HAS_GIO=1)
+      target_link_libraries(
+        directional_gui PRIVATE PkgConfig::DIRECTIONAL_GIO)
+    else()
+      message(WARNING
+        "GIO/GDBus was not found. directional-ui will use its ImGui file "
+        "picker instead of the XDG Desktop Portal on Linux.")
+    endif()
+  endif()
   target_include_directories(
     directional_gui
     PRIVATE
       "${CMAKE_CURRENT_SOURCE_DIR}/src/cli")
   target_compile_features(directional_gui PRIVATE cxx_std_20)
+  if(APPLE)
+    set_target_properties(
+      directional_gui
+      PROPERTIES
+        OBJCXX_STANDARD 20
+        OBJCXX_STANDARD_REQUIRED YES
+        OBJCXX_EXTENSIONS NO)
+  endif()
   if(MSVC)
     target_compile_options(directional_gui PRIVATE /bigobj)
   endif()
