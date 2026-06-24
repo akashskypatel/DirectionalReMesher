@@ -24,7 +24,7 @@ WINDOWS_VS_NINJA_CANDIDATES = (
     ),
 )
 
-FEATURE_USER_OPTIONS = [
+COMMON_FEATURE_USER_OPTIONS = [
     ("enable-gmp", None, "Enable GMP support if found"),
     ("disable-gmp", None, "Disable GMP support"),
     ("enable-suitesparse", None, "Enable SuiteSparse integration solver"),
@@ -33,10 +33,15 @@ FEATURE_USER_OPTIONS = [
     ("disable-pardiso", None, "Disable Intel oneMKL PARDISO integration solver"),
     ("enable-cudss", None, "Enable NVIDIA cuDSS integration solver"),
     ("disable-cudss", None, "Disable NVIDIA cuDSS integration solver"),
-    ("build-cli", None, "Build the optional native directional CLI executable"),
-    ("no-build-cli", None, "Do not build the optional native directional CLI executable"),
 ]
+GUI_BUILD_USER_OPTIONS = [
+    ("build-gui", None, "Build the optional Polyscope desktop UI executable"),
+    ("no-build-gui", None, "Do not build the optional Polyscope desktop UI executable"),
+]
+FEATURE_USER_OPTIONS = [*COMMON_FEATURE_USER_OPTIONS, *GUI_BUILD_USER_OPTIONS]
+COMMON_FEATURE_BOOLEAN_OPTIONS = [option[0] for option in COMMON_FEATURE_USER_OPTIONS]
 FEATURE_BOOLEAN_OPTIONS = [option[0] for option in FEATURE_USER_OPTIONS]
+
 
 
 @dataclass
@@ -46,6 +51,7 @@ class BuildFeatures:
     enable_pardiso: bool
     enable_cudss: bool
     build_cli: bool
+    build_gui: bool
 
     def resolve_solver_backend(self) -> None:
         requested = [
@@ -77,6 +83,7 @@ class BuildFeatures:
         return [
             f"-DBUILD_PYTHON={_as_cmake_bool(build_python)}",
             f"-DDIRECTIONAL_BUILD_CLI={_as_cmake_bool(self.build_cli)}",
+            f"-DDIRECTIONAL_BUILD_GUI={_as_cmake_bool(self.build_gui)}",
             f"-DDIRECTIONAL_ENABLE_GMP={_as_cmake_bool(self.enable_gmp)}",
             f"-DDIRECTIONAL_ENABLE_SUITESPARSE={_as_cmake_bool(self.enable_suitesparse)}",
             f"-DDIRECTIONAL_ENABLE_PARDISO={_as_cmake_bool(self.enable_pardiso)}",
@@ -236,6 +243,13 @@ def _build_dir(name: str) -> Path:
     return ROOT / "build" / name
 
 
+def _safe_build_name(value: str) -> str:
+    return "".join(
+        character if character.isalnum() or character in {"-", "_"} else "-"
+        for character in value
+    )
+
+
 def _as_cmake_bool(value: bool) -> str:
     return "ON" if value else "OFF"
 
@@ -268,6 +282,8 @@ def _initialize_feature_options(command: object) -> None:
     command.disable_cudss = False
     command.build_cli = _env_bool("DIRECTIONAL_BUILD_CLI", False)
     command.no_build_cli = False
+    command.build_gui = _env_bool("DIRECTIONAL_BUILD_GUI", False)
+    command.no_build_gui = False
 
 
 def _finalize_feature_options(command: object) -> BuildFeatures:
@@ -279,6 +295,7 @@ def _finalize_feature_options(command: object) -> BuildFeatures:
         enable_pardiso=bool(command.enable_pardiso and not command.disable_pardiso),
         enable_cudss=bool(command.enable_cudss and not command.disable_cudss),
         build_cli=bool(command.build_cli and not command.no_build_cli),
+        build_gui=bool(command.build_gui and not command.no_build_gui),
     )
     features.resolve_solver_backend()
 
@@ -287,6 +304,7 @@ def _finalize_feature_options(command: object) -> BuildFeatures:
     command.enable_pardiso = features.enable_pardiso
     command.enable_cudss = features.enable_cudss
     command.build_cli = features.build_cli
+    command.build_gui = features.build_gui
     return features
 
 
@@ -297,6 +315,7 @@ def _features_from_command(command: object) -> BuildFeatures:
         enable_pardiso=bool(command.enable_pardiso),
         enable_cudss=bool(command.enable_cudss),
         build_cli=bool(command.build_cli),
+        build_gui=bool(command.build_gui),
     )
 
 
@@ -323,7 +342,10 @@ class CMakeExtension(Extension):
 
 
 class BuildStandalone(Command):
-    description = "Build and install the standalone Directional library and optional native CLI"
+    description = (
+        "Build and install the standalone Directional library with optional "
+        "Polyscope UI"
+    )
     user_options = [
         ("build-dir=", None, "Build directory"),
         ("install-dir=", None, "Install directory"),
@@ -341,6 +363,11 @@ class BuildStandalone(Command):
             self.build_dir = str(_build_dir("standalone"))
         if self.install_dir is None:
             self.install_dir = str(Path(self.build_dir) / "install")
+
+        # The native CLI has its own build_cli command. Never make it an
+        # implicit side effect of the standalone library build.
+        self.build_cli = False
+        self.no_build_cli = True
         _finalize_feature_options(self)
 
     def run(self) -> None:
@@ -349,10 +376,101 @@ class BuildStandalone(Command):
         features = _features_from_command(self)
         configure_args = _cmake_args(
             install_dir,
-            features.cmake_args(build_python=False),
+            [
+                *features.cmake_args(build_python=False),
+            ],
         )
         _configure(build_dir, configure_args)
-        _build(build_dir, "directional_cli" if features.build_cli else "directional")
+        targets = ["directional"]
+        if features.build_gui:
+            targets.append("directional_gui")
+        _build(build_dir, *targets)
+        _install(build_dir)
+
+
+class BuildCli(Command):
+    description = "Build and install the native Directional CLI executable"
+    user_options = [
+        ("build-dir=", None, "Build directory"),
+        ("install-dir=", None, "Install directory"),
+        *COMMON_FEATURE_USER_OPTIONS,
+    ]
+    boolean_options = COMMON_FEATURE_BOOLEAN_OPTIONS
+
+    def initialize_options(self) -> None:
+        self.build_dir = None
+        self.install_dir = None
+        _initialize_feature_options(self)
+
+    def finalize_options(self) -> None:
+        if self.build_dir is None:
+            self.build_dir = str(_build_dir("cli"))
+        if self.install_dir is None:
+            self.install_dir = str(Path(self.build_dir) / "install")
+
+        self.build_cli = True
+        self.no_build_cli = False
+        self.build_gui = False
+        self.no_build_gui = True
+        _finalize_feature_options(self)
+
+    def run(self) -> None:
+        build_dir = Path(self.build_dir)
+        install_dir = Path(self.install_dir)
+        features = _features_from_command(self)
+        configure_args = _cmake_args(
+            install_dir,
+            [
+                *features.cmake_args(build_python=False),
+                "-DDIRECTIONAL_BUILD_CLI=ON",
+                "-DDIRECTIONAL_BUILD_GUI=OFF",
+            ],
+        )
+        _configure(build_dir, configure_args)
+        _build(build_dir, "directional_cli")
+        _install(build_dir)
+
+
+class BuildGui(Command):
+    description = "Build and install the native Polyscope desktop UI"
+    user_options = [
+        ("build-dir=", None, "Build directory"),
+        ("install-dir=", None, "Install directory"),
+        *COMMON_FEATURE_USER_OPTIONS,
+    ]
+    boolean_options = COMMON_FEATURE_BOOLEAN_OPTIONS
+
+    def initialize_options(self) -> None:
+        self.build_dir = None
+        self.install_dir = None
+        _initialize_feature_options(self)
+
+    def finalize_options(self) -> None:
+        if self.build_dir is None:
+            self.build_dir = str(_build_dir("gui"))
+        if self.install_dir is None:
+            self.install_dir = str(Path(self.build_dir) / "install")
+
+        self.build_cli = False
+        self.no_build_cli = True
+        self.build_gui = True
+        self.no_build_gui = False
+        _finalize_feature_options(self)
+
+    def run(self) -> None:
+        build_dir = Path(self.build_dir)
+        install_dir = Path(self.install_dir)
+        features = _features_from_command(self)
+        configure_args = _cmake_args(
+            install_dir,
+            [
+                *features.cmake_args(build_python=False),
+                "-DDIRECTIONAL_BUILD_CLI=OFF",
+                "-DDIRECTIONAL_BUILD_GUI=ON",
+            ],
+        )
+        _configure(build_dir, configure_args)
+        _build(build_dir, "directional_gui")
         _install(build_dir)
 
 
@@ -366,6 +484,11 @@ class CMakeBuildExt(build_ext):
 
     def finalize_options(self) -> None:
         super().finalize_options()
+
+        # The native executable is intentionally built only by build_cli.
+        # The console_scripts entry point remains part of the Python package.
+        self.build_cli = False
+        self.no_build_cli = True
         _finalize_feature_options(self)
 
     def build_extension(self, ext: Extension) -> None:
@@ -400,8 +523,8 @@ class CMakeBuildExt(build_ext):
 
         _configure(build_temp, configure_args)
         targets = ["_directional"]
-        if features.build_cli:
-            targets.append("directional_cli")
+        if features.build_gui:
+            targets.append("directional_gui")
         _build(build_temp, *targets)
         _install(build_temp)
 
@@ -418,11 +541,12 @@ class CMakeBuildExt(build_ext):
             extdir / "__init__.py",
         )
 
-        if features.build_cli:
+        if features.build_gui:
             installed_bin_dir = install_dir / "bin"
             if not installed_bin_dir.is_dir():
                 raise RuntimeError(
-                    "Native CLI was requested, but CMake did not install a bin directory"
+                    "Requested the Polyscope UI, but CMake did not install a "
+                    "bin directory"
                 )
             packaged_bin_dir = extdir / "bin"
             packaged_bin_dir.mkdir(parents=True, exist_ok=True)
@@ -434,7 +558,10 @@ class CMakeBuildExt(build_ext):
 setup(
     name="directional",
     version="0.1.0",
-    description="Directional field processing library with standalone, native CLI, and Python wheel builds",
+    description=(
+        "Directional field processing library with standalone, "
+        "native CLI, Polyscope UI, and Python wheel builds"
+    ),
     packages=find_packages(where="python"),
     package_dir={"": "python"},
     package_data={"directional": ["*.dll", "*.dylib", "*.so", "bin/*"]},
@@ -444,7 +571,12 @@ setup(
     cmdclass={
         "build_standalone": BuildStandalone,
         "standalone": BuildStandalone,
+        "build_cli": BuildCli,
+        "cli": BuildCli,
+        "build_gui": BuildGui,
+        "gui": BuildGui,
         "build_ext": CMakeBuildExt,
+        "ext": CMakeBuildExt,
     },
     zip_safe=False,
 )
