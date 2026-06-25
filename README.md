@@ -1,8 +1,217 @@
+<img src="./assets/banner.png" alt="DirectionalReMesher Banner" width="100%">
+
 # DirectionalReMesher
 
-DirectionalReMesher is a focused remeshing fork of [Directional](https://github.com/avaxman/Directional), a directional-field processing library by Amir Vaxman and collaborators.
+DirectionalReMesher is a focused remeshing fork of [Directional](https://github.com/avaxman/Directional), the directional-field processing library developed by Amir Vaxman and collaborators.
 
-This repository provides a practical C++20 implementation of the cross-field-aligned remeshing pipeline described in [Directional Field Synthesis, Design, and Processing](https://cims.nyu.edu/gcl/papers/DirectionalFieldsSTAR-2016.pdf). Compared with the original implementation, this fork adds a reusable shared library, a shared C++ command backend, Python bindings, an optional native CLI, multiple sparse integration solvers, improved diagnostics, and non-verbose progress reporting.
+It provides a practical C++20 implementation of the cross-field-guided remeshing pipeline described in [Directional Field Synthesis, Design, and Processing](https://cims.nyu.edu/gcl/papers/DirectionalFieldsSTAR-2016.pdf).
+
+The project converts triangle meshes into quad-dominant meshes whose edges follow a directional field defined across the surface. A field can be generated automatically from the input geometry or supplied by the user.
+
+Compared with the original implementation, this fork adds:
+
+* a reusable shared C++ library
+* Python bindings
+* an optional native command-line interface
+* a shared C++ backend used by both CLIs
+* multiple sparse integration solver backends
+* expanded diagnostics and validation
+* progress reporting for long-running operations
+* additional mesh and field input/output formats
+
+## Features
+
+* Generate quad-dominant meshes from triangle meshes
+* Align generated mesh edges with a cross-field
+* Automatically calculate smooth 4-RoSy power fields
+* Automatically calculate curvature-aligned cross-fields
+* Remesh using a user-provided cross-field
+* Import and export multiple mesh and field formats
+* Use optimized sparse solvers for the integration stage
+* Access the same remeshing pipeline through C++, Python, or the native CLI
+
+## Basic Workflow
+
+1. Select an input triangle mesh
+2. Choose how the guiding field will be obtained
+
+   * automatically generate a smooth power field
+   * automatically generate a curvature-aligned cross-field
+   * provide an existing 4-RoSy cross-field
+3. Configure the target edge length and remeshing options
+4. Generate the quad-dominant output mesh
+
+## Choosing a Field
+
+The guiding field determines the preferred orientation of the generated mesh edges.
+
+### Automatically calculated field
+
+Use an automatically calculated field when you want a fully self-contained remeshing workflow.
+
+This is the simplest option and works well for many smooth or moderately detailed meshes. Results depend on the quality of the input geometry, curvature estimation, boundaries, singularities, and selected parameters.
+
+### User-provided field
+
+Use a supplied field when you need direct control over edge flow.
+
+A carefully designed field can improve alignment around important features such as:
+
+* ridges and valleys;
+* anatomical or mechanical structures;
+* boundaries;
+* sharp features;
+* intended deformation directions.
+
+### Neural-assisted field
+
+A neural model can predict a field from learned examples rather than relying only on geometric optimization.
+
+The [NeurCross](https://github.com/akashskypatel/NeurCross) project can be used to generate neural-assisted cross-fields. These fields may better capture high-level structural patterns on suitable meshes, but their quality depends on the model, training data, and similarity between the input mesh and the training examples.
+
+Both auto-generated and neural-generated fields should still be validated before remeshing. They may require smoothing, constraint enforcement, or correction around singularities and boundaries.
+
+## Tips for Better Results
+
+* Start with a clean, manifold triangle mesh whenever possible.
+* Remove duplicate vertices, degenerate faces, and disconnected fragments before remeshing.
+* Use the lowest input face count that still preserves the required geometry.
+* Very dense meshes increase field computation, integration, and mesh-generation time.
+* Preserve important geometric features during simplification.
+* Adjust the target length ratio to control the approximate size of generated faces.
+* Use a custom field when automatic edge flow does not match the intended structure.
+* Enable verbose output when diagnosing solver, topology, or field-integration failures.
+* Compare multiple field-generation methods when automatic results are unsatisfactory.
+
+## Performance Notes
+
+Remeshing time depends on:
+
+* the number of input vertices and faces;
+* the number and placement of field singularities;
+* the number of mixed-integer integration iterations;
+* the selected sparse solver;
+* the requested output resolution;
+* the complexity of the generated mesh topology.
+
+The progress percentage may occasionally pause or appear to advance unevenly. Some stages perform iterative refinement, repeated sparse solves, or topology cleanup whose cost cannot be predicted exactly in advance.
+
+For faster processing:
+
+* simplify unnecessarily dense input meshes;
+* avoid requesting an excessively small target edge length;
+* use an optimized sparse solver backend;
+* test the workflow on a lower-resolution copy before processing the final mesh.
+
+## Troubleshooting
+
+If remeshing fails:
+
+1. Run again with verbose output enabled.
+2. Check the input mesh for non-manifold edges, duplicate vertices, and degenerate faces.
+3. Try a less dense version of the mesh.
+4. Increase the target edge length.
+5. Try a different field-generation method.
+6. Inspect the generated field for discontinuities, poor boundary alignment, or excessive singularities.
+7. Supply a custom or neural-assisted field when automatic field generation is unsuitable.
+
+Automatic field generation is intended to provide a useful default, but no single field-generation method is optimal for every mesh.
+
+## Terminology
+
+* **Direction field**: A set of preferred directions defined across a surface. It guides how edges, curves, or quadrilateral faces should be oriented.
+
+* **Cross-field**: A direction field that provides four equivalent directions at each point on the surface, usually separated by 90 degrees. Because rotating the cross by 90 degrees produces the same field, it is well suited to quad remeshing.
+
+* **Curvature-aligned cross-field**: A cross-field whose directions follow the principal curvature directions of the surface. In simple terms, it tends to follow the natural bends, ridges, valleys, and flow of the shape.
+
+* **Power field**: A mathematical representation of a direction field in which rotationally equivalent directions are encoded as a single value. This makes the field easier to smooth and optimize.
+
+* **4-power field**: The power representation commonly used for a four-direction cross-field. Raising the direction representation to the fourth power makes directions that differ by 90 degrees equivalent.
+
+* **Smooth power field**: A power field optimized so that neighboring directions change gradually across the surface. It reduces sudden direction changes, except where singularities or strong geometric features require them.
+
+* **Singularity**: A point where the surrounding field cannot remain perfectly regular. Singularities are expected in cross-fields and often determine where the topology of the final quad mesh changes.
+
+* **Field alignment**: How closely the field follows a chosen target, such as surface curvature, feature lines, boundary edges, or user-specified directions.
+
+* **Field smoothness**: How gradually the field directions change from one part of the surface to another.
+
+## Differences Between Field Types
+
+### Directional calculated cross-field
+
+A Directional calculated cross-field is produced by geometric and numerical algorithms operating directly on the input mesh.
+
+It typically:
+
+* uses the mesh shape, curvature, boundaries, and optional constraints;
+* solves an optimization problem to create a smooth and consistent field;
+* follows mathematically defined behavior;
+* produces predictable and reproducible results;
+* may require more computation on large or complex meshes.
+
+In simple terms:
+
+> Directional examines the surface geometry and calculates a field that is mathematically smooth and suitable for quad remeshing.
+
+This is usually the most reliable option when geometric accuracy and reproducibility are important.
+
+### Neural-generated cross-field
+
+A neural-generated cross-field is predicted by a trained machine-learning model.
+
+It typically:
+
+* learns field patterns from example meshes and training data;
+* predicts directions directly from mesh features;
+* can be much faster after the model has been trained;
+* may recognize structural patterns that are difficult to express with fixed rules;
+* depends heavily on the quality and variety of its training data;
+* may produce less predictable results on shapes unlike those seen during training.
+
+In simple terms:
+
+> A neural model looks at the mesh and predicts what a good cross-field should look like based on examples it learned from.
+
+This can be useful for fast initial estimates or for reproducing design patterns learned from a dataset. The predicted field may still need smoothing, constraint enforcement, or numerical correction before remeshing.
+
+### Power field
+
+A power field is not necessarily a separate source of field directions. It is primarily a different mathematical representation of a directional or neural-generated field.
+
+It typically:
+
+* removes ambiguity between directions that are rotationally equivalent;
+* makes smoothing and optimization easier;
+* allows a four-direction cross-field to be represented as one continuous mathematical quantity;
+* must be converted back into explicit cross directions before visualization or remeshing.
+
+In simple terms:
+
+> A power field is a convenient mathematical encoding of a cross-field, rather than a different kind of geometric guidance.
+
+For a four-direction cross-field, the fourth-power representation treats all four arms of the cross as the same orientation.
+
+### Practical Comparison
+
+| Field type                         | How it is produced                               | Main advantage                                     | Main limitation                                                 |
+| ---------------------------------- | ------------------------------------------------ | -------------------------------------------------- | --------------------------------------------------------------- |
+| Directional calculated cross-field | Numerical optimization based on mesh geometry    | Reliable, reproducible, and geometrically grounded | Can be computationally expensive                                |
+| Neural-generated cross-field       | Prediction from a trained neural network         | Fast and capable of learning complex patterns      | Quality depends on training data and may require correction     |
+| Power field                        | Mathematical encoding of another direction field | Easier to smooth, optimize, and store              | Not directly the final visible cross-field                      |
+| Curvature-aligned cross-field      | Built or constrained to follow surface curvature | Follows natural ridges, valleys, and shape flow    | Curvature can be noisy or ambiguous on flat and irregular areas |
+| Smooth power field                 | Power field after smoothness optimization        | Produces gradual and coherent direction changes    | Excessive smoothing can weaken important features               |
+
+### Simple Mental Model
+
+Think of a quad-remeshing field as a set of compass crosses placed across the surface.
+
+* A **Directional calculated cross-field** places and adjusts those crosses using geometric rules and numerical optimization.
+* A **neural-generated cross-field** predicts where the crosses should point based on previously learned examples.
+* A **power field** is the mathematical format used to represent those crosses without having to distinguish between their four equivalent arms.
+* A **curvature-aligned field** turns the crosses so they follow the natural bends and features of the surface.
+* A **smooth field** ensures neighboring crosses rotate gradually rather than changing direction abruptly.
 
 ## Build outputs
 
